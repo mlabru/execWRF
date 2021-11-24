@@ -413,11 +413,14 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
         shutil.copy(lfile, ls_dir_log)
 
 # -------------------------------------------------------------------------------------------------
-def process_WRF(f_config):
+def process_WRF(f_config, f_data):
     """
     processa WRF:
     - real.exe => wrf.exe => move wrfout_* para diretorio ARWPost
     - remove os arquivos que não serão utilizados
+
+    :param f_config (ConfigParser): dados de configuração
+    :param f_data (ConfigParser): dados da data de previsão
     """
     # logger
     M_LOG.info("Início do processamento: %s.", str(datetime.datetime.now()))
@@ -452,7 +455,7 @@ def process_WRF(f_config):
     # logger
     M_LOG.info("Execução do real.exe")
     try:
-        # execuita real.exe
+        # executa real.exe
         result = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
@@ -533,7 +536,9 @@ def main():
     # process WPS
     process_WPS(l_config, ls_cfg_pn, l_data)
     # process WRF
-    #process_WRF(l_config, l_data)
+    process_WRF(l_config, l_data)
+    # process ARWPost
+    #process_ARW(l_config)
 
     # logger
     M_LOG.info("Fim de execução !")
