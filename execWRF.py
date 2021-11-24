@@ -18,13 +18,14 @@ import sys
 
 # local
 import downloadFNL as dwn
-import makeNamelist_DA as mnl
+import make_namelist_DA as mnl
 
 # < defines >--------------------------------------------------------------------------------------
 
 # WFR home dir
 DS_WRF_HOME = "/home/webpca/WRF"
 DS_WRF_HOME = "/home/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
+DS_WRF_HOME = "/media/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
 
 # < logging >--------------------------------------------------------------------------------------
 
@@ -72,6 +73,7 @@ def adjust_config(f_config, fs_cfg_pn, f_data, fi_hora_prev, fs_regiao):
 
     # diretório de saída
     l_wrf["dir_out"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], f"wrf.{fs_regiao}.{ldt_ini}")
+
     # diretório do log
     l_wrf["dir_log"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_log"], f"wrf.{fs_regiao}.{ldt_ini}")
 
@@ -144,9 +146,7 @@ def arg_parse():
 # -------------------------------------------------------------------------------------------------
 def load_config(fs_regiao):
     """
-    Configura o parser de leitura do wrf.conf
-
-    Define diretório base (PATH) de execução (onde estão os arquivos de configuração)
+    configura o parser de leitura do wrf.conf
     """
     # diretório base (PATH) de execução (onde estão os arquivos de configuração)
     ls_path = DS_WRF_HOME if DS_WRF_HOME else os.path.dirname(os.path.realpath(__file__))
@@ -175,21 +175,96 @@ def load_config(fs_regiao):
     return l_config, ls_cfg_pn
 
 # -------------------------------------------------------------------------------------------------
-def pre_process(f_config, fs_cfg_pn, f_data):
+def print_usage(fs_msg):
     """
-    pre-processamento
+    imprime na tela os argumentos de entrada válidos
+    """
+    # error message ?
+    if fs_msg:
+        # print error message
+        print(fs_msg)
+        
+    # usage message
+    print()
+    print("Entre com os argumentos: <AAAA> <MM> <DD> <HORA> <TEMPO> <REGIAO> [E-MAIL]")
+    print("    AAAA   = Ano")
+    print("    MM     = Mês (01..12)")
+    print("    DD     = Dia (01..31)")
+    print("    HH     = Hora (00..23)")
+    print("    HORA   = Hora de início da previsão (00|06|12|18)")
+    print("    TEMPO  = Tempo de previsão (24|48|72)")
+    print("    REGIAO = Região (N|SE)")
+    print("    E-MAIL = E-mail para resposta (opcional)")
+  
+    # abort
+    sys.exit(1)
+    
+# -------------------------------------------------------------------------------------------------
+def process_ARW(f_config):
+    """
+    processa ARWpost:
+    - cria namelist.ARWpost
+    - executa ARWpost para o número de domínios definidos em wrf.conf
+    """
+    # logger
+    M_LOG.info("Início do processamento ARWpost: %s.", str(datetime.datetime.now()))
+
+    # diretório do ARW 
+    ls_dir_arw = l_wrf["dir_arw"]
+    print("ls_dir_arw", ls_dir_arw)
+
+    # vai para o diretório dos executáveis do ARWpost
+    os.chdir(ls_dir_arw)
+
+
+    for index in (1,v_max_dominios):
+        M_LOG.info("Criando namelistARWpost D" + str(index))
+        os.chdir(v_path)
+        l_namelist.criaNamelistARWPost(index)
+        os.chdir(ls_dir_arw)
+        # logger
+        M_LOG.info("Inicio de Execução do ARWpost: dominio " + str(index))
+        print("Executando ARWpost: D" + str(index))
+        try:
+            ls_cmd_exe = ls_dir_arw + "/ARWpost.exe"
+            result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
+
+            arw_file = open(ls_dir_log + "/arwpostD" + str(index) + ".out",'w')
+            arw_file.writelines(result)
+            arw_file.close()
+
+            files_move = glob.glob(ls_dir_arw + "/wrfd" + str(index) + '*') # Obtem arquivos de saida
+            for file in files_move:     # Move os arquivos gerados para o diretório de saída                  
+                shutil.move(os.path.join(ls_dir_arw,file), v_dir_out + '/' +  os.path.basename(file))
+
+        # em caso de erro,...
+        except subprocess.CalledProcessError:
+            # logger
+            M_LOG.error("Erro ao executar ARWpost.exe")
+            # abort
+            sys.exit(1)
+
+    files_delete = glob.glob(ls_dir_arw + "/wrfout*")
+
+    for file in files_delete:
+        # logger
+        M_LOG.info("Removendo: " + file)
+        os.remove(file)
+
+# -------------------------------------------------------------------------------------------------
+def process_WPS(f_config, fs_cfg_pn, f_data):
+    """
+    processa WPS: 
+    - cria o arquivo namelist.wps
+    - geogrid.exe => link_grib.csh => ungrib.exe => metgrid.exe
+    - remove os arquivos que não serão utilizados
 
     :param f_config (ConfigParser): dados de configuração
     :param fs_cfg_pn (str): pathname do arquivo de configuração
     :param f_data (ConfigParser): dados da data de previsão
-
-    Processo WPS: 
-    - Cria o arquivo namelist.wps
-    - Executa geogrid.exe => executa link_grib.csh => executa ungrib.exe => executa metgrid.exe
-    - Remove os arquivos que não serão utilizados
     """
     # logger
-    M_LOG.info("Início do pré-processamento: %s.", str(datetime.datetime.now()))
+    M_LOG.info("Início do processamento WPS: %s.", str(datetime.datetime.now()))
 
     # WRF section
     l_wrf = f_config["WRF"]
@@ -231,51 +306,34 @@ def pre_process(f_config, fs_cfg_pn, f_data):
         # cria diretório do GFS
         os.makedirs(ls_dir_gfs)
 
-    # diretório raiz do WRF
-    ls_dir_wrf = l_wrf["dir_wrf"]
-    print("ls_dir_wrf", ls_dir_wrf)
-
-    # vai para o diretório base do WRF
-    os.chdir(ls_dir_wrf)
-
-    # diretório de execução do WRF
-    ls_dir_exec = l_wrf["dir_wrf_exec"]
-    print("ls_dir_exec", ls_dir_exec)
+    # vai para o diretório dos executáveis do WRF
+    os.chdir(l_wrf["dir_wrf_exec"])
 
     # para todos os arquivos de trabalho do WRF...
-    for file in glob.glob(os.path.join(ls_dir_exec, "met_*")):
+    for file in glob.glob("met_*"):
         print("file", file)
         # remove o arquivo
         os.remove(file)
 
-    # cria objeto que gera os Namelists
-    l_namelist = mnl.makeNameList(fs_cfg_pn)
-    assert l_namelist
+    # vai para o diretório de execução do WPS
+    os.chdir(l_wrf["dir_wps"])
 
-    # diretório do WPS
-    ls_dir_wps = l_wrf["dir_wps"]
-    print("ls_dir_wps", ls_dir_wps)
+    # namelist file for WPS
+    ls_namelist_file = "namelist.wps"
 
     # logger
-    M_LOG.info("Criando namelist WPS: %s", os.path.join(ls_dir_wps, "namelist.wps"))
+    M_LOG.info("Criando namelist WPS: %s", ls_namelist_file)
 
     # cria namelist.wps
-    # l_namelist.criaNamelistWPS()
-
-    # vai para o diretório de execução do WPS
-    os.chdir(ls_dir_wps)
+    mnl.cria_namelist_WPS(ls_namelist_file, f_config, f_data)
 
     # logger
     M_LOG.info("Execução do geogrid.exe")
     try:
-        # comando
-        ls_cmd_exe = os.path.join(ls_dir_wps, "geogrid.exe")
-        print("ls_cmd_exe", ls_cmd_exe)
-
         # executa geogrid.exe
-        result = subprocess.check_output(ls_cmd_exe, shell=True ).decode(sys.stdout.encoding)
+        result = subprocess.check_output("./geogrid.exe", shell=True ).decode(sys.stdout.encoding)
 
-        # create outout file
+        # create output file
         with open(os.path.join(ls_dir_log, "geogrid.out"), 'w') as lfh:
             # save output
             lfh.writelines(result)
@@ -291,8 +349,7 @@ def pre_process(f_config, fs_cfg_pn, f_data):
     M_LOG.info("Criando links dos arquivos GFS")
     try:
         # comando
-        ls_cmd_exe = os.path.join(ls_dir_wps, "link_grib.csh") + " " + \
-                     os.path.join(l_wrf["dir_gfs"], f"{ldt_ini}") + "/*"
+        ls_cmd_exe = "./link_grib.csh " + os.path.join(l_wrf["dir_gfs"], f"{ldt_ini}", "*")
         print("ls_cmd_exe", ls_cmd_exe)
 
         # executa link_grib.csh
@@ -308,14 +365,10 @@ def pre_process(f_config, fs_cfg_pn, f_data):
     # logger
     M_LOG.debug("Execução do ungrib.exe")
     try:
-        # command
-        ls_cmd_exe = os.path.join(ls_dir_wps, "ungrib.exe")
-        print("ls_cmd_exe", ls_cmd_exe)
-
         # executa ungrib.exe
-        result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
+        result = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
 
-        # create outout file
+        # create output file
         with open(os.path.join(ls_dir_log, "ungrib.out"), 'w') as lfh:
             # save output
             lfh.writelines(result)
@@ -330,14 +383,10 @@ def pre_process(f_config, fs_cfg_pn, f_data):
     # logger
     M_LOG.debug("Execução do metgrid.exe")
     try:
-        # command
-        ls_cmd_exe = os.path.join(ls_dir_wps, "metgrid.exe")
-        print("ls_cmd_exe", ls_cmd_exe)
-
         # executa metgrid.exe
-        result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
+        result = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
 
-        # create outout file
+        # create output file
         with open(os.path.join(ls_dir_log, "metgrid.out"), 'w') as lfh:
             # save output
             lfh.writelines(result)
@@ -352,50 +401,23 @@ def pre_process(f_config, fs_cfg_pn, f_data):
     # for all extensions...
     for ls_ext in ["GFS", "geo_em", "PFILE", "FILE", "GRIBFILE"]:
         # for all files with extension...
-        for file in glob.glob(os.path.join(ls_dir_wps, ls_ext + '*')):
-            print("file", file)
+        for lfile in glob.glob(ls_ext + '*'):
+            print("removendo:", lfile)
             # remove o arquivo
-            os.remove(file)
+            os.remove(lfile)
 
     # for all log files...
-    for file in glob.glob(os.path.join(ls_dir_wps, "*.log")):
-        print("file", file)
-        # move os arquivos de log do WPS para o diretorio de log 'wrf.<regiao>.<AAAAMMDDHH>'
-        shutil.copy(os.path.join(ls_dir_wps, file), ls_dir_log)
+    for lfile in glob.glob("*.log"):
+        print("copiando:", lfile)
+        # move os arquivos de log do WPS para o diretório de log
+        shutil.copy(lfile, ls_dir_log)
 
 # -------------------------------------------------------------------------------------------------
-def print_usage(fs_msg):
+def process_WRF(f_config):
     """
-    imprime na tela os argumentos de entrada válidos
-    """
-    # error message ?
-    if fs_msg:
-        # print error message
-        print(fs_msg)
-        
-    # usage message
-    print()
-    print("Entre com os argumentos: <AAAA> <MM> <DD> <HORA> <TEMPO> <REGIAO> [E-MAIL]")
-    print("    AAAA   = Ano")
-    print("    MM     = Mês (01..12)")
-    print("    DD     = Dia (01..31)")
-    print("    HH     = Hora (00..23)")
-    print("    HORA   = Hora de início da previsão (00|06|12|18)")
-    print("    TEMPO  = Tempo de previsão (24|48|72)")
-    print("    REGIAO = Região (N|SE)")
-    print("    E-MAIL = E-mail para resposta (opcional)")
-  
-    # abort
-    sys.exit(1)
-    
-# -------------------------------------------------------------------------------------------------
-def process(f_config):
-    """
-    PROCESSAMENTO
-
-    Processo WRF:
-    Executa real.exe => executa wrf.exe => move wrfout_* para diretorio ARWPost
-    remove os arquivos que não serão utilizados
+    processa WRF:
+    - real.exe => wrf.exe => move wrfout_* para diretorio ARWPost
+    - remove os arquivos que não serão utilizados
     """
     # logger
     M_LOG.info("Início do processamento: %s.", str(datetime.datetime.now()))
@@ -407,84 +429,84 @@ def process(f_config):
     # parser das variáveis de configuração
     ldt_ini = f_data["data"]["data_ini"]
 
+    # cria diretório de log
+    ls_dir_log = l_wrf["dir_log"]
+    print("ls_dir_log", ls_dir_log)
 
-    M_LOG.debug('Criando Namelist WRF : ' + v_dir_exec + '/namelist.input')
-    l_namelist.criaNamelistWRF()      #Cria namelist.input
+    # diretório de execução do WRF
+    ls_dir_exec = l_wrf["dir_wrf_exec"]
+    print("ls_dir_exec", ls_dir_exec)
 
-    ls_cmd_exe = v_dir_exec + '/real.exe'
-    real_file = open(v_dir_log + "/real.out", 'w')
-    os.chdir(v_dir_exec)    #Entra no diretório de execução do WRF
-    M_LOG.debug('Inicio da Execução do real.exe')
+    # vai para o diretório de execução do WRF
+    os.chdir(ls_dir_exec)
+
+    # namelist.input
+    ls_namelist_file = "namelist.input"
+    
+    # logger
+    M_LOG.info("Criando namelist WRF: %s", ls_namelist_file)
+
+    # cria namelist.input
+    mnl.cria_namelist_WRF(ls_namelist_file, f_config, f_data)
+
+    # logger
+    M_LOG.info("Execução do real.exe")
     try:
-        result = subprocess.check_output(v_dir_exec + '/real.exe', shell=True).decode(sys.stdout.encoding)
-        real_file.writelines(result)
-        real_file.close()
+        # execuita real.exe
+        result = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
+
+        # create output file
+        with open(os.path.join(ls_dir_log, "real.out"), 'w') as lfh:
+            # save output
+            lfh.writelines(result)
+
+    # em caso de erro,...
     except subprocess.CalledProcessError:
-        shutil.copy(os.path.join(v_dir_exec,'rsl.error.0000'),v_dir_log)
-        M_LOG.error('Erro ao executar real.exe')
+        # logger
+        M_LOG.error("Erro ao executar real.exe")
+        # salva o log do erro
+        shutil.copy("rsl.error.0000", ls_dir_log)
+        # abort
         sys.exit(1)
 
-    #Executa o WRF com multiprocessamento (mpirun)
-    os.chdir(v_dir_exec)
-    #ls_cmd_exe ='mpirun -np 24 ./wrf.exe'
-    ls_cmd_exe ='mpirun --use-hwthread-cpus -np 7 ./wrf.exe'
-    print("Comando Exe: " + ls_cmd_exe)
-    wrf_file = open(v_dir_log + "/wrf.out", 'w')
-    M_LOG.debug('Inicio de execução do WRF')
+    # logger
+    M_LOG.info("Execução do WRF")
     try:
+        # comando
+        # ls_cmd_exe = "mpirun -np 24 ./wrf.exe"
+        ls_cmd_exe = "mpirun --use-hwthread-cpus -np 7 ./wrf.exe"
+
+        # executa o WRF com multiprocessamento (mpirun)
         result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
-        wrf_file.writelines(result)
-        wrf_file.close()
+
+        # create output file
+        with open(os.path.join(ls_dir_log, "wrf.out"), 'w') as lfh:
+            # save output
+            lfh.writelines(result)
+
+    # em caso de erro,...
     except subprocess.CalledProcessError:
-        print('Erro ao executar ' + ls_cmd_exe)
-        shutil.copy(os.path.join(v_dir_exec,'rsl.error.0000'),v_dir_log)
-        M_LOG.error('Erro ao executar wrf.exe')
+        # logger
+        M_LOG.error("Erro ao executar wrf.exe")
+        # salva o log do erro
+        shutil.copy("rsl.error.0000", ls_dir_log)
+        # abort
         sys.exit(1)
 
+    # diretório do ARW 
+    ls_dir_arw = l_wrf["dir_arw"]
+    print("ls_dir_arw", ls_dir_arw)
 
-    #Move os arquivos de saída wrfout_* para o diretório de pós processamento ARWPost
-    v_dir_arw = configReg.get("WRF","dir_arw")
-    files_move = glob.glob(v_dir_exec + '/wrfout_*')
-    for file in files_move:
-        shutil.move(os.path.join(v_dir_exec,file), v_dir_arw + '/' + os.path.basename(file))
-        #shutil.copy(os.path.join(v_dir_exec,file), v_dir_arw + '/' + os.path.basename(file))
+    # for all wrfout files...
+    for file in glob.glob("wrfout_*"):
+        print("movendo:", file) 
+        # move os arquivos de saída wrfout_* para o diretório de pós processamento ARWPost
+        shutil.move(file, os.path.join(ls_dir_arw, file))
 
-
-    files_delete = glob.glob(v_dir_exec + '/met*.nc')
-
-    for file in files_delete:
-        M_LOG.debug('Removendo: ' + file)
-        os.remove(file)
-
-    '''
-    Processo ARWpost:
-    Cria namelist.ARWpost e executa ARWpost para o numero de domínios definidos em wrf.conf
-    '''
-
-    for index in (1,v_max_dominios):
-        M_LOG.debug("Criando namelistARWpost D" + str(index))
-        os.chdir(v_path)
-        l_namelist.criaNamelistARWPost(index)
-        os.chdir(v_dir_arw)
-        arw_file = open(v_dir_log + "/arwpostD" + str(index) + ".out",'w')
-        ls_cmd_exe = v_dir_arw + '/ARWpost.exe'
-        M_LOG.debug('Inicio de Execução do ARWpost: dominio ' + str(index))
-        print("Executando ARWpost: D" + str(index))
-        try:
-            result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
-            arw_file.writelines(result)
-            arw_file.close()
-            files_move = glob.glob(v_dir_arw + '/wrfd' + str(index) + '*') # Obtem arquivos de saida
-            for file in files_move:     # Move os arquivos gerados para o diretório de saída                  
-                shutil.move(os.path.join(v_dir_arw,file), v_dir_out + '/' +  os.path.basename(file))
-        except subprocess.CalledProcessError:
-            M_LOG.error('Erro ao executar ARWpost.exe')
-            sys.exit(1)
-
-    files_delete = glob.glob(v_dir_arw + '/wrfout*')
-
-    for file in files_delete:
-        M_LOG.debug('Removendo: ' + file)
+    # for all met*.nc files...
+    for file in glob.glob("met*.nc"):
+        print("removendo:", file)
+        # remove file
         os.remove(file)
 
 # -------------------------------------------------------------------------------------------------
@@ -508,10 +530,10 @@ def main():
     # download dos arquivos FNL
     # dwn.downloadFNL(v_data, v_hora_ini, l_hora_prev)
 
-    # pre process
-    pre_process(l_config, ls_cfg_pn, l_data)
-    # process
-    process(l_config, l_data)
+    # process WPS
+    process_WPS(l_config, ls_cfg_pn, l_data)
+    # process WRF
+    #process_WRF(l_config, l_data)
 
     # logger
     M_LOG.info("Fim de execução !")

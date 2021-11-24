@@ -32,50 +32,6 @@ class makeNameList():
         v_hora_final = config_data.get("data","hora_final")
         v_start_date = (v_ano_ini + '-' + v_mes_ini + '-' + v_dia_ini + '_' + v_hora_ini + ':00:00')
 
-    def criaNamelistWPS(self):
-        print("CRIA NAMELIST WPS!")
-        '''
-        Gera o arquivo namelist.wps utilizado na execução do módulo WPS
-        '''
-        arq_namelist = open(self.configReg.get("WRF","dir_wps") + '/namelist.wps','w+')
-        namelist = []
-        namelist.append("&share\n")
-        namelist.append("  wrf_core = 'ARW',\n")
-        namelist.append("  max_dom = " + self.configReg.get("CONFIG","p_maxdom") + ",\n")
-        namelist.append("  start_date = '" + v_start_date + "'")
-        namelist.append(", '" + v_ano_ini + '-' + v_mes_ini + '-' + v_dia_ini + '_' + v_hora_ini + ":00:00',")
-        namelist.append("'" + v_ano_ini + '-' + v_mes_ini + '-' + v_dia_ini + '_' + v_hora_ini + ":00:00',\n")
-        namelist.append("  end_date = '" + v_ano_final + '-' + v_mes_final + '-' + v_dia_final + '_' + v_hora_final + ":00:00',")
-        namelist.append("'" + v_ano_final + '-' + v_mes_final + '-' + v_dia_final + '_' + v_hora_final + ":00:00',")
-        namelist.append("'" + v_ano_final + '-' + v_mes_final + '-' + v_dia_final + '_' + v_hora_final + ":00:00',\n")
-        namelist.append("  interval_seconds = " + self.configReg.get ( "CONFIG", "p_interval_seconds" ))
-        namelist.append("\n  io_form_geogrid = 2,\n" + "  debug_level = 0,\n" + "/\n" )
-        namelist.append("\n&geogrid\n" + "  parent_id = " + self.configReg.get("CONFIG","p_parent_id") + "\n")
-        namelist.append("  parent_grid_ratio = " + self.configReg.get("CONFIG", "p_parent_grid_ratio") + "\n")
-        namelist.append("  i_parent_start = " + self.configReg.get("CONFIG","p_i_parent_start") + "\n")
-        namelist.append("  j_parent_start = " + self.configReg.get("CONFIG","p_j_parent_start") + "\n")
-        namelist.append("  e_we = " + self.configReg.get("CONFIG","p_e_we") + "\n")
-        namelist.append("  e_sn = " + self.configReg.get("CONFIG","p_e_sn") + "\n")
-        namelist.append("  geog_data_res = " + self.configReg.get("CONFIG","p_geog_data_res") + "\n")
-        namelist.append("  dx = " + self.configReg.get("CONFIG","p_dx") + "\n")
-        namelist.append("  dy = " + self.configReg.get("CONFIG","p_dy") + "\n")
-        namelist.append("  map_proj = 'mercator',\n")
-        namelist.append("  ref_lat = " + self.configReg.get("CONFIG","p_ref_lat") + "\n")
-        namelist.append("  ref_lon = " + self.configReg.get("CONFIG","p_ref_lon") + "\n")
-        namelist.append("  truelat1 = 0.0,\n")
-        namelist.append("  truelat2 = 0.0,\n")
-        namelist.append("  stand_lon = " + self.configReg.get("CONFIG","p_ref_lon") + "\n")
-        namelist.append("  geog_data_path = '" + self.configReg.get("WRF","DIR_WRF_GEOG") + "'\n/")
-        namelist.append("\n\n&ungrib\n")
-        namelist.append("  out_format = 'WPS',\n")
-        namelist.append("  prefix = 'GFS2',\n/\n")
-        namelist.append("\n&metgrid\n")
-        namelist.append("  fg_name = 'GFS2',\n")
-        namelist.append("  io_form_metgrid = 2,\n")
-        namelist.append("  opt_output_from_metgrid_path = " + "'" + self.configReg.get("WRF","dir_wrf_exec") + "'\n/\n")
-        namelist.append("\n")
-        arq_namelist.writelines(namelist)
-        arq_namelist.close()
     
     '''
     Gera o arquivo namelist.input utilizado na execução do WRF
@@ -302,3 +258,67 @@ class makeNameList():
         namelist.append('/\n')
         arq_namelist.writelines(namelist)
         arq_namelist.close()
+
+# -------------------------------------------------------------------------------------------------
+def cria_namelist_WPS(fs_namelist_file, f_config, f_data):
+    """
+    gera o arquivo namelist.wps utilizado na execução do módulo WPS
+    """
+    # CONFIG section
+    l_cfg = f_config["CONFIG"]
+    assert l_cfg
+
+    # WRF section
+    l_wrf = f_config["WRF"]
+    assert l_wrf
+
+    # data section
+    l_date = f_data["data"]
+    assert l_date
+
+    # cria o namelist
+    with open(fs_namelist_file, 'w') as lfh:
+        # gera o namelist
+        lfh.write(f"&share\n")
+        lfh.write(f"  wrf_core = 'ARW',\n")
+        lfh.write(f"  max_dom = {l_cfg['p_maxdom']},\n")
+        lfh.write(f"  start_date = '{l_date['ano_ini']}-{l_date['mes_ini']}-{l_date['dia_ini']}_{l_date['hora_ini']}:00:00',")
+        lfh.write(f"'{l_date['ano_ini']}-{l_date['mes_ini']}-{l_date['dia_ini']}_{l_date['hora_ini']}:00:00',")
+        lfh.write(f"'{l_date['ano_ini']}-{l_date['mes_ini']}-{l_date['dia_ini']}_{l_date['hora_ini']}:00:00',\n")
+        lfh.write(f"  end_date = '{l_date['ano_final']}-{l_date['mes_final']}-{l_date['dia_final']}_{l_date['hora_final']}:00:00',")
+        lfh.write(f"'{l_date['ano_final']}-{l_date['mes_final']}-{l_date['dia_final']}_{l_date['hora_final']}:00:00',")
+        lfh.write(f"'{l_date['ano_final']}-{l_date['mes_final']}-{l_date['dia_final']}_{l_date['hora_final']}:00:00',\n")
+        lfh.write(f"  interval_seconds = {l_cfg['p_interval_seconds']}\n")
+        lfh.write(f"  io_form_geogrid = 2,\n")
+        lfh.write(f"  debug_level = 0,\n/")
+        lfh.write(f"\n\n")
+        lfh.write(f"&geogrid\n")
+        lfh.write(f"  parent_id = {l_cfg['p_parent_id']}\n")
+        lfh.write(f"  parent_grid_ratio = {l_cfg['p_parent_grid_ratio']}\n")
+        lfh.write(f"  i_parent_start = {l_cfg['p_i_parent_start']}\n")
+        lfh.write(f"  j_parent_start = {l_cfg['p_j_parent_start']}\n")
+        lfh.write(f"  e_we = {l_cfg['p_e_we']}\n")
+        lfh.write(f"  e_sn = {l_cfg['p_e_sn']}\n")
+        lfh.write(f"  geog_data_res = {l_cfg['p_geog_data_res']}\n")
+        lfh.write(f"  dx = {l_cfg['p_dx']}\n")
+        lfh.write(f"  dy = {l_cfg['p_dy']}\n")
+        lfh.write(f"  map_proj = 'mercator',\n")
+        lfh.write(f"  ref_lat = {l_cfg['p_ref_lat']}\n")
+        lfh.write(f"  ref_lon = {l_cfg['p_ref_lon']}\n")
+        lfh.write(f"  truelat1 = 0.0,\n")
+        lfh.write(f"  truelat2 = 0.0,\n")
+        lfh.write(f"  stand_lon = {l_cfg['p_ref_lon']}\n")
+        lfh.write(f"  geog_data_path = '{l_wrf['DIR_WRF_GEOG']}'\n/")
+        lfh.write(f"\n\n")
+        lfh.write(f"&ungrib\n")
+        lfh.write(f"  out_format = 'WPS',\n")
+        lfh.write(f"  prefix = 'GFS2',\n/")
+        lfh.write(f"\n\n")
+        lfh.write(f"&metgrid\n")
+        lfh.write(f"  fg_name = 'GFS2',\n")
+        lfh.write(f"  io_form_metgrid = 2,\n")
+        lfh.write(f"  opt_output_from_metgrid_path = '{l_wrf['dir_wrf_exec']}'\n/")
+        lfh.write(f"\n")
+
+# < the end >--------------------------------------------------------------------------------------
+        
