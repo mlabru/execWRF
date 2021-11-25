@@ -17,16 +17,18 @@ import subprocess
 import sys
 
 # local
-import download_fnl as dwn
-import make_namelist as mnl
+import exc_defs as df
+import exc_download as dwn
+import exc_namelist as mnl
 
 # < defines >--------------------------------------------------------------------------------------
 
-# WFR home dir
-#DS_WRF_HOME = "/home/webpca/WRF"
-DS_WRF_HOME = "/home/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
-#DS_WRF_HOME = "/media/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
-#DS_WRF_HOME = "/home/mlabru/Public/met/WRF"
+# horas de início de previsão válidas
+DLST_HORA_OK = [0, 6, 12, 18]
+# tempos de previsão válidos
+DLST_TEMPO_OK = [24, 48, 72]
+# regiões válidas
+DLST_REGIAO_OK = ["N", "SE"]
 
 # < logging >--------------------------------------------------------------------------------------
 
@@ -35,38 +37,40 @@ M_LOG = logging.getLogger(__name__)
 M_LOG.setLevel(logging.DEBUG)
 
 # -------------------------------------------------------------------------------------------------
-def adjust_config(f_config, fs_cfg_pn, f_data, fi_hora_prev, fs_regiao):
+def adjust_config(fo_config, fs_cfg_pn, fo_date, fi_tempo, fs_regiao):
     """
     ajusta a configuração dos parâmetros de previsão
 
-    :param f_config (ConfigParser): dados de configuração
+    :param fo_config (ConfigParser): dados de configuração
     :param fs_cfg_pn (str): pathname do arquivo de configuração
-    :param f_data (ConfigParser): dados da data de previsão
-    :param fi_hora_prev (int): tempo de previsão
+    :param fo_date (ConfigParser): dados da data de previsão
+    :param fi_tempo (int): tempo de previsão
     :param fs_regiao (str): região
     """
     # calcula o valor de l_n_dx
-    f_config["CONFIG"]["l_n_dx"] = f_config["CONFIG"]["p_dx"].replace(',', '')
+    fo_config["CONFIG"]["l_n_dx"] = fo_config["CONFIG"]["p_dx"].replace(',', '')
 
     # WRF section
-    l_wrf = f_config["WRF"]
+    l_wrf = fo_config["WRF"]
     assert l_wrf
-    
+
     # horas de previsão
-    l_wrf["horas"] = str(fi_hora_prev)
-    l_wrf["intervalo"] = '6'
+    l_wrf["horas"] = str(fi_tempo)
+    l_wrf["intervalo"] = str(df.DI_INTERVALO)
 
     # recria o arquivo de configuração
     with open(fs_cfg_pn, 'w') as lfh:
-        # grava no arquivo de configuração 
-        f_config.write(lfh)
+        # grava no arquivo de configuração
+        fo_config.write(lfh)
 
     # parser das variáveis de configuração
-    ldt_ini = f_data["data"]["data_ini"]
+    ldt_ini = fo_date["data"]["data_ini"]
 
     # diretório dos executáveis
     l_wrf["dir_wrf_exec"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wrf_exec"])
 
+    # diretório do FNL
+    l_wrf["dir_fnl"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_fnl"])
     # diretório do GFS
     l_wrf["dir_gfs"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_gfs"])
     # diretório do WPS
@@ -105,31 +109,31 @@ def arg_parse():
 
     # início para previsão
     li_hora_ini = int(sys.argv[4]) if sys.argv[4].isdigit() else print_usage(f"Erro na hora: {sys.argv[4]}")
-    li_hora_ini = li_hora_ini if li_hora_ini in [0, 6, 12, 18] else print_usage(f"Erro: hora ({li_hora_ini}) inválida.")
+    li_hora_ini = li_hora_ini if li_hora_ini in DLST_HORA_OK else print_usage(f"Erro: hora ({li_hora_ini}) inválida.")
 
     # tempo de previsão
-    li_hora_prev = int(sys.argv[5]) if sys.argv[5].isdigit() else print_usage(f"Erro no tempo: {sys.argv[5]}")
-    li_hora_prev = li_hora_prev if li_hora_prev in [24, 48, 72] else print_usage(f"Erro: tempo ({li_hora_prev}) inválida.")
+    li_tempo = int(sys.argv[5]) if sys.argv[5].isdigit() else print_usage(f"Erro no tempo: {sys.argv[5]}")
+    li_tempo = li_tempo if li_tempo in DLST_TEMPO_OK else print_usage(f"Erro: tempo ({li_tempo}) inválida.")
 
     # região de previsão
     ls_regiao = str(sys.argv[6]).strip().upper() if sys.argv[6].isalpha() else print_usage(f"Erro na região: {sys.argv[6]}")
-    ls_regiao = ls_regiao if ls_regiao in ["N", "SE"] else print_usage(f"Erro: região ({ls_regiao}) inválida.")
+    ls_regiao = ls_regiao if ls_regiao in DLST_REGIAO_OK else print_usage(f"Erro: região ({ls_regiao}) inválida.")
 
     # calcula a data final (data inicial + horas de previsão):
-    ldt_final = datetime.datetime(li_ano_ini, li_mes_ini, li_dia_ini, li_hora_ini, 0, 0) + datetime.timedelta(hours=li_hora_prev)
+    ldt_final = datetime.datetime(li_ano_ini, li_mes_ini, li_dia_ini, li_hora_ini, 0, 0) + datetime.timedelta(hours=li_tempo)
 
     # cria configuração de data e hora
-    lo_data = configparser.ConfigParser()
-    assert lo_data
+    lo_date = configparser.ConfigParser()
+    assert lo_date
 
     # create data section
-    lo_data["data"] = {}
+    lo_date["data"] = {}
 
     # data section
-    ldct_date = lo_data["data"]
+    ldct_date = lo_date["data"]
     ldct_date["data_ini"] = "{:4d}{:02d}{:02d}".format(li_ano_ini, li_mes_ini, li_dia_ini)
     ldct_date["ano_ini"] = "{:4d}".format(li_ano_ini)
-    ldct_date["mes_ini"] = "{:02d}".format(li_mes_ini) 
+    ldct_date["mes_ini"] = "{:02d}".format(li_mes_ini)
     ldct_date["dia_ini"] = "{:02d}".format(li_dia_ini)
     ldct_date["hora_ini"] = "{:02d}".format(li_hora_ini)
     ldct_date["data_final"] = "{}".format(datetime.datetime.strftime(ldt_final, "%Y%m%d"))
@@ -139,12 +143,12 @@ def arg_parse():
     ldct_date["hora_final"] = "{:02d}".format(ldt_final.hour)
 
     # cria arquivo de configuração de data e hora
-    with open(os.path.join(DS_WRF_HOME, "data.conf"), 'w') as lfh:
+    with open(os.path.join(df.DS_WRF_HOME, "data.conf"), 'w') as lfh:
         # grava todas as informações de data e hora em arquivo
-        lo_data.write(lfh)
+        lo_date.write(lfh)
 
     # return
-    return lo_data, li_hora_prev, ls_regiao
+    return lo_date, li_tempo, ls_regiao
 
 # -------------------------------------------------------------------------------------------------
 def load_config(fs_regiao):
@@ -152,7 +156,7 @@ def load_config(fs_regiao):
     configura o parser de leitura do wrf.conf
     """
     # diretório base (PATH) de execução (onde estão os arquivos de configuração)
-    ls_path = DS_WRF_HOME if DS_WRF_HOME else os.path.dirname(os.path.realpath(__file__))
+    ls_path = df.DS_WRF_HOME if df.DS_WRF_HOME else os.path.dirname(os.path.realpath(__file__))
 
     # pathname do arquivo de configuração
     ls_cfg_pn = os.path.join(ls_path, f"wrf_{fs_regiao}.conf")
@@ -186,7 +190,7 @@ def print_usage(fs_msg):
     if fs_msg:
         # print error message
         print(fs_msg)
-        
+
     # usage message
     print()
     print("Entre com os argumentos: <AAAA> <MM> <DD> <INÍCIO> <TEMPO> <REGIÃO> [E-MAIL]")
@@ -194,47 +198,48 @@ def print_usage(fs_msg):
     print("    MM     = Mês (01..12)")
     print("    DD     = Dia (01..31)")
     print("    HH     = Hora (00..23)")
-    print("    INÍCIO = Hora de início da previsão (00|06|12|18)")
-    print("    TEMPO  = Tempo de previsão (24|48|72)")
-    print("    REGIÃO = Região (N|SE)")
+    print("    INÍCIO = Hora de início da previsão ({})".format(DLST_HORA_OK))
+    print("    TEMPO  = Tempo de previsão ({})".format(DLST_TEMPO_OK))
+    print("    REGIÃO = Região ({})".format(DLST_REGIAO_OK))
     print("    E-MAIL = E-mail para resposta (opcional)")
-  
+
     # abort
     sys.exit(1)
-    
+
 # -------------------------------------------------------------------------------------------------
-def process_ARW(f_config, f_data):
+def process_ARW(fo_config, fo_date):
     """
     processa ARWpost:
     - cria namelist.ARWpost
     - executa ARWpost para o número de domínios definidos em wrf.conf
 
-    :param f_config (ConfigParser): dados de configuração
-    :param f_data (ConfigParser): dados da data de previsão
+    :param fo_config (ConfigParser): dados de configuração
+    :param fo_date (ConfigParser): dados da data de previsão
     """
     # logger
     M_LOG.info("Início do ARWpost: %s.", str(datetime.datetime.now()))
 
     # WRF section
-    l_wrf = f_config["WRF"]
+    l_wrf = fo_config["WRF"]
     assert l_wrf
-    
+
     # cria diretório de log
     ls_dir_log = l_wrf["dir_log"]
-
-    # diretório do ARW 
+    # diretório do ARW
     ls_dir_arw = l_wrf["dir_arw"]
+    # diretório de saída
+    ls_dir_out = l_wrf["dir_out"]
 
     # vai para o diretório dos executáveis do ARWpost
     os.chdir(ls_dir_arw)
 
     # para todos os domínios...
-    for li_dom in (1, int(f_config["CONFIG"]["p_maxdom"])):
+    for li_dom in (1, int(fo_config["CONFIG"]["p_maxdom"])):
         # logger
         M_LOG.info("Criando namelist ARWpost: namelist.ARWpost D0%d", li_dom)
 
         # cria namelist.ARWpost
-        mnl.cria_namelist_ARWPost("namelist.ARWpost", f_config, f_data, li_dom)
+        mnl.cria_namelist_ARWPost("namelist.ARWpost", fo_config, fo_date, li_dom)
 
         # logger
         M_LOG.info("Execução do ARWpost.exe para o domínio %d", li_dom)
@@ -248,10 +253,10 @@ def process_ARW(f_config, f_data):
                 lfh.writelines(ls_res)
 
             # for all arquivos de saida...
-            for lfile in glob.glob(f"wrfd{li_dom}*"):     
+            for lfile in glob.glob(f"wrfd{li_dom}*"):
                 M_LOG.debug("movendo: %s", lfile)
-                # move os arquivos gerados para o diretório de saída                  
-                shutil.move(lfile, os.path.join(v_dir_out, os.path.basename(lfile)))
+                # move os arquivos gerados para o diretório de saída
+                shutil.move(lfile, os.path.join(ls_dir_out, os.path.basename(lfile)))
 
         # em caso de erro,...
         except subprocess.CalledProcessError:
@@ -267,26 +272,23 @@ def process_ARW(f_config, f_data):
         os.remove(lfile)
 
 # -------------------------------------------------------------------------------------------------
-def process_WPS(f_config, fs_cfg_pn, f_data):
+def process_WPS(fo_config, fs_cfg_pn, fo_date):
     """
-    processa WPS: 
+    processa WPS:
     - cria o arquivo namelist.wps
     - geogrid.exe => link_grib.csh => ungrib.exe => metgrid.exe
     - remove os arquivos que não serão utilizados
 
-    :param f_config (ConfigParser): dados de configuração
+    :param fo_config (ConfigParser): dados de configuração
     :param fs_cfg_pn (str): pathname do arquivo de configuração
-    :param f_data (ConfigParser): dados da data de previsão
+    :param fo_date (ConfigParser): dados da data de previsão
     """
     # logger
     M_LOG.info("Início do WPS: %s.", str(datetime.datetime.now()))
 
     # WRF section
-    l_wrf = f_config["WRF"]
+    l_wrf = fo_config["WRF"]
     assert l_wrf
-    
-    # parser das variáveis de configuração
-    ldt_ini = f_data["data"]["data_ini"]
 
     # cria diretório de log
     ls_dir_log = l_wrf["dir_log"]
@@ -334,7 +336,7 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
     M_LOG.info("Criando namelist WPS: namelist.wps")
 
     # cria namelist.wps
-    mnl.cria_namelist_WPS("namelist.wps", f_config, f_data)
+    mnl.cria_namelist_WPS("namelist.wps", fo_config, fo_date)
 
     # logger
     M_LOG.info("Execução do geogrid.exe")
@@ -353,6 +355,9 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
         M_LOG.error("Erro na execução do geogrid.exe")
         # abort
         sys.exit(1)
+
+    # data de início da previsão
+    ldt_ini = fo_date["data"]["data_ini"]
 
     # logger
     M_LOG.info("Criando links dos arquivos GFS")
@@ -420,22 +425,22 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
         shutil.copy(lfile, ls_dir_log)
 
 # -------------------------------------------------------------------------------------------------
-def process_WRF(f_config, f_data):
+def process_WRF(fo_config, fo_date):
     """
     processa WRF:
     - real.exe => wrf.exe => move wrfout_* para diretorio ARWPost
     - remove os arquivos que não serão utilizados
 
-    :param f_config (ConfigParser): dados de configuração
-    :param f_data (ConfigParser): dados da data de previsão
+    :param fo_config (ConfigParser): dados de configuração
+    :param fo_date (ConfigParser): dados da data de previsão
     """
     # logger
     M_LOG.info("Início do WRF: %s.", str(datetime.datetime.now()))
 
     # WRF section
-    l_wrf = f_config["WRF"]
+    l_wrf = fo_config["WRF"]
     assert l_wrf
-    
+
     # cria diretório de log
     ls_dir_log = l_wrf["dir_log"]
 
@@ -446,7 +451,7 @@ def process_WRF(f_config, f_data):
     M_LOG.info("Criando namelist WRF: namelist.input")
 
     # cria namelist.input
-    mnl.cria_namelist_WRF("namelist.input", f_config, f_data)
+    mnl.cria_namelist_WRF("namelist.input", fo_config, fo_date)
 
     # logger
     M_LOG.info("Execução do real.exe")
@@ -465,7 +470,7 @@ def process_WRF(f_config, f_data):
         M_LOG.error("Erro ao executar real.exe")
         # for all rsl.error files...
         for lfile in glob.glob("rsl.error.*"):
-            M_LOG.debug("movendo: %s", lfile) 
+            M_LOG.debug("movendo: %s", lfile)
             # salva o log do erro
             shutil.move(lfile, os.path.join(ls_dir_log, lfile))
         # abort
@@ -493,7 +498,7 @@ def process_WRF(f_config, f_data):
         M_LOG.error("Erro ao executar wrf.exe")
         # for all rsl.error files...
         for lfile in glob.glob("rsl.error.*"):
-            M_LOG.debug("movendo: %s", lfile) 
+            M_LOG.debug("movendo: %s", lfile)
             # salva o log do erro
             shutil.move(lfile, os.path.join(ls_dir_log, lfile))
         # abort
@@ -501,7 +506,7 @@ def process_WRF(f_config, f_data):
 
     # for all wrfout files...
     for lfile in glob.glob("wrfout_*"):
-        M_LOG.debug("movendo: %s", lfile) 
+        M_LOG.debug("movendo: %s", lfile)
         # move os arquivos de saída wrfout_* para o diretório do ARWPost
         shutil.move(lfile, os.path.join(l_wrf["dir_arw"], lfile))
 
@@ -517,27 +522,27 @@ def main():
     drive app
     """
     # check parameters
-    lo_data, li_hora_prev, ls_regiao = arg_parse()
+    lo_date, li_tempo, ls_regiao = arg_parse()
 
     # load config file
     lo_config, ls_cfg_pn = load_config(ls_regiao)
     assert lo_config
 
     # adjust config parameters
-    adjust_config(lo_config, ls_cfg_pn, lo_data, li_hora_prev, ls_regiao)
+    adjust_config(lo_config, ls_cfg_pn, lo_date, li_tempo, ls_regiao)
 
     # logger
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))
 
     # download dos arquivos FNL
-    dwn.download_FNL(l_date, li_hora_prev)
+    dwn.download_FNL(lo_date, li_tempo, lo_config["WRF"]["dir_fnl"])
 
     # process WPS
-    process_WPS(lo_config, ls_cfg_pn, lo_data)
+    process_WPS(lo_config, ls_cfg_pn, lo_date)
     # process WRF
-    process_WRF(lo_config, lo_data)
+    process_WRF(lo_config, lo_date)
     # process ARWPost
-    process_ARW(lo_config, lo_data)
+    process_ARW(lo_config, lo_date)
 
     # logger
     M_LOG.info("Fim de execução !")
@@ -557,5 +562,5 @@ if "__main__" == __name__:
 
     # run application
     main()
-    
+
 # < the end >--------------------------------------------------------------------------------------
