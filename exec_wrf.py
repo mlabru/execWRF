@@ -17,16 +17,16 @@ import subprocess
 import sys
 
 # local
-import downloadFNL as dwn
-import make_namelist_DA as mnl
+import download_fnl as dwn
+import make_namelist as mnl
 
 # < defines >--------------------------------------------------------------------------------------
 
 # WFR home dir
-DS_WRF_HOME = "/home/webpca/WRF"
+#DS_WRF_HOME = "/home/webpca/WRF"
 DS_WRF_HOME = "/home/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
-DS_WRF_HOME = "/media/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
-DS_WRF_HOME = "/home/mlabru/Public/met/WRF"
+#DS_WRF_HOME = "/media/mlabru/works_lpd/mlabru/Works/wrk.icea/Public/05.prj.met/02.git.met/WRF"
+#DS_WRF_HOME = "/home/mlabru/Public/met/WRF"
 
 # < logging >--------------------------------------------------------------------------------------
 
@@ -93,58 +93,58 @@ def arg_parse():
         print_usage(f"Número de argumentos inválido: {len(sys.argv)}")
 
     # ano para previsão
-    l_ano_ini = int(sys.argv[1]) if sys.argv[1].isdigit() else print_usage(f"Erro no ano: {sys.argv[1]}")
+    li_ano_ini = int(sys.argv[1]) if sys.argv[1].isdigit() else print_usage(f"Erro no ano: {sys.argv[1]}")
 
     # mes para previsão
-    l_mes_ini = int(sys.argv[2]) if sys.argv[2].isdigit() else print_usage(f"Erro no mês: {sys.argv[2]}")
-    l_mes_ini = l_mes_ini if 1 <= l_mes_ini <= 12 else print_usage(f"Erro: mês ({l_mes_ini}) inválido.")
+    li_mes_ini = int(sys.argv[2]) if sys.argv[2].isdigit() else print_usage(f"Erro no mês: {sys.argv[2]}")
+    li_mes_ini = li_mes_ini if 1 <= li_mes_ini <= 12 else print_usage(f"Erro: mês ({li_mes_ini}) inválido.")
 
     # dia para previsão
-    l_dia_ini = int(sys.argv[3]) if sys.argv[3].isdigit() else print_usage(f"Erro no dia: {sys.argv[3]}")
-    l_dia_ini = l_dia_ini if 1 <= l_dia_ini <= 31 else print_usage(f"Erro: dia ({l_dia_ini}) inválido.")
+    li_dia_ini = int(sys.argv[3]) if sys.argv[3].isdigit() else print_usage(f"Erro no dia: {sys.argv[3]}")
+    li_dia_ini = li_dia_ini if 1 <= li_dia_ini <= 31 else print_usage(f"Erro: dia ({li_dia_ini}) inválido.")
 
     # início para previsão
-    l_hora_ini = int(sys.argv[4]) if sys.argv[4].isdigit() else print_usage(f"Erro na hora: {sys.argv[4]}")
-    l_hora_ini = l_hora_ini if l_hora_ini in [0, 6, 12, 18] else print_usage(f"Erro: hora ({l_hora_ini}) inválida.")
+    li_hora_ini = int(sys.argv[4]) if sys.argv[4].isdigit() else print_usage(f"Erro na hora: {sys.argv[4]}")
+    li_hora_ini = li_hora_ini if li_hora_ini in [0, 6, 12, 18] else print_usage(f"Erro: hora ({li_hora_ini}) inválida.")
 
     # tempo de previsão
-    l_hora_prev = int(sys.argv[5]) if sys.argv[5].isdigit() else print_usage(f"Erro no tempo: {sys.argv[5]}")
-    l_hora_prev = l_hora_prev if l_hora_prev in [24, 48, 72] else print_usage(f"Erro: tempo ({l_hora_prev}) inválida.")
+    li_hora_prev = int(sys.argv[5]) if sys.argv[5].isdigit() else print_usage(f"Erro no tempo: {sys.argv[5]}")
+    li_hora_prev = li_hora_prev if li_hora_prev in [24, 48, 72] else print_usage(f"Erro: tempo ({li_hora_prev}) inválida.")
 
     # região de previsão
-    l_regiao = str(sys.argv[6]).strip().upper() if sys.argv[6].isalpha() else print_usage(f"Erro na região: {sys.argv[6]}")
-    l_regiao = l_regiao if l_regiao in ["N", "SE"] else print_usage(f"Erro: região ({l_regiao}) inválida.")
+    ls_regiao = str(sys.argv[6]).strip().upper() if sys.argv[6].isalpha() else print_usage(f"Erro na região: {sys.argv[6]}")
+    ls_regiao = ls_regiao if ls_regiao in ["N", "SE"] else print_usage(f"Erro: região ({ls_regiao}) inválida.")
 
     # calcula a data final (data inicial + horas de previsão):
-    ldt_final = datetime.datetime(l_ano_ini, l_mes_ini, l_dia_ini, l_hora_ini, 0, 0) + datetime.timedelta(hours=l_hora_prev)
+    ldt_final = datetime.datetime(li_ano_ini, li_mes_ini, li_dia_ini, li_hora_ini, 0, 0) + datetime.timedelta(hours=li_hora_prev)
 
     # cria configuração de data e hora
-    l_data = configparser.ConfigParser()
-    assert l_data
+    lo_data = configparser.ConfigParser()
+    assert lo_data
 
     # create data section
-    l_data["data"] = {}
+    lo_data["data"] = {}
 
     # data section
-    l_dt_sect = l_data["data"]
-    l_dt_sect["data_ini"] = "{:4d}{:02d}{:02d}".format(l_ano_ini, l_mes_ini, l_dia_ini)
-    l_dt_sect["ano_ini"] = "{:4d}".format(l_ano_ini)
-    l_dt_sect["mes_ini"] = "{:02d}".format(l_mes_ini) 
-    l_dt_sect["dia_ini"] = "{:02d}".format(l_dia_ini)
-    l_dt_sect["hora_ini"] = "{:02d}".format(l_hora_ini)
-    l_dt_sect["data_final"] = "{}".format(datetime.datetime.strftime(ldt_final, "%Y%m%d"))
-    l_dt_sect["ano_final"] = "{:4d}".format(ldt_final.year)
-    l_dt_sect["mes_final"] = "{:02d}".format(ldt_final.month)
-    l_dt_sect["dia_final"] = "{:02d}".format(ldt_final.day)
-    l_dt_sect["hora_final"] = "{:02d}".format(ldt_final.hour)
+    ldct_date = lo_data["data"]
+    ldct_date["data_ini"] = "{:4d}{:02d}{:02d}".format(li_ano_ini, li_mes_ini, li_dia_ini)
+    ldct_date["ano_ini"] = "{:4d}".format(li_ano_ini)
+    ldct_date["mes_ini"] = "{:02d}".format(li_mes_ini) 
+    ldct_date["dia_ini"] = "{:02d}".format(li_dia_ini)
+    ldct_date["hora_ini"] = "{:02d}".format(li_hora_ini)
+    ldct_date["data_final"] = "{}".format(datetime.datetime.strftime(ldt_final, "%Y%m%d"))
+    ldct_date["ano_final"] = "{:4d}".format(ldt_final.year)
+    ldct_date["mes_final"] = "{:02d}".format(ldt_final.month)
+    ldct_date["dia_final"] = "{:02d}".format(ldt_final.day)
+    ldct_date["hora_final"] = "{:02d}".format(ldt_final.hour)
 
     # cria arquivo de configuração de data e hora
     with open(os.path.join(DS_WRF_HOME, "data.conf"), 'w') as lfh:
         # grava todas as informações de data e hora em arquivo
-        l_data.write(lfh)
+        lo_data.write(lfh)
 
     # return
-    return l_data, l_hora_prev, l_regiao
+    return lo_data, li_hora_prev, ls_regiao
 
 # -------------------------------------------------------------------------------------------------
 def load_config(fs_regiao):
@@ -165,17 +165,17 @@ def load_config(fs_regiao):
         sys.exit(1)
 
     # cria o parser de configuração
-    l_config = configparser.ConfigParser()
-    assert l_config
+    lo_config = configparser.ConfigParser()
+    assert lo_config
 
     # lê o arquivo de configuração
-    l_config.read(ls_cfg_pn)
+    lo_config.read(ls_cfg_pn)
 
     # WRF path
-    l_config["WRF"]["dir_wrf"] = ls_path
+    lo_config["WRF"]["dir_wrf"] = ls_path
 
     # return
-    return l_config, ls_cfg_pn
+    return lo_config, ls_cfg_pn
 
 # -------------------------------------------------------------------------------------------------
 def print_usage(fs_msg):
@@ -230,26 +230,22 @@ def process_ARW(f_config, f_data):
 
     # para todos os domínios...
     for li_dom in (1, int(f_config["CONFIG"]["p_maxdom"])):
-        # namelist file for ARWpost
-        ls_namelist_file = "namelist.ARWpost"
-
         # logger
-        M_LOG.info("Criando namelist ARWpost: %s D0%d", ls_namelist_file, li_dom)
+        M_LOG.info("Criando namelist ARWpost: namelist.ARWpost D0%d", li_dom)
 
         # cria namelist.ARWpost
-        mnl.cria_namelist_ARWPost(ls_namelist_file, f_config, f_data, li_dom)
+        mnl.cria_namelist_ARWPost("namelist.ARWpost", f_config, f_data, li_dom)
 
         # logger
         M_LOG.info("Execução do ARWpost.exe para o domínio %d", li_dom)
-
         try:
             # executa ARWpost.exe
-            result = subprocess.check_output("./ARWpost.exe", shell=True).decode(sys.stdout.encoding)
+            ls_res = subprocess.check_output("./ARWpost.exe", shell=True).decode(sys.stdout.encoding)
 
             # create output file
             with open(os.path.join(ls_dir_log, f"arwpostD{li_dom}.out"), 'w') as lfh:
                 # save output
-                lfh.writelines(result)
+                lfh.writelines(ls_res)
 
             # for all arquivos de saida...
             for lfile in glob.glob(f"wrfd{li_dom}*"):     
@@ -334,25 +330,22 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
     # vai para o diretório de execução do WPS
     os.chdir(l_wrf["dir_wps"])
 
-    # namelist file for WPS
-    ls_namelist_file = "namelist.wps"
-
     # logger
-    M_LOG.info("Criando namelist WPS: %s", ls_namelist_file)
+    M_LOG.info("Criando namelist WPS: namelist.wps")
 
     # cria namelist.wps
-    mnl.cria_namelist_WPS(ls_namelist_file, f_config, f_data)
+    mnl.cria_namelist_WPS("namelist.wps", f_config, f_data)
 
     # logger
     M_LOG.info("Execução do geogrid.exe")
     try:
         # executa geogrid.exe
-        result = subprocess.check_output("./geogrid.exe", shell=True ).decode(sys.stdout.encoding)
+        ls_res = subprocess.check_output("./geogrid.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
         with open(os.path.join(ls_dir_log, "geogrid.out"), 'w') as lfh:
             # save output
-            lfh.writelines(result)
+            lfh.writelines(ls_res)
 
     # em caso de erro,...
     except subprocess.CalledProcessError:
@@ -367,7 +360,7 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
         # comando
         ls_cmd_exe = "./link_grib.csh " + os.path.join(l_wrf["dir_gfs"], f"{ldt_ini}", "*")
         # executa link_grib.csh
-        result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
+        ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
 
     # em caso de erro,...
     except subprocess.CalledProcessError:
@@ -380,12 +373,12 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
     M_LOG.debug("Execução do ungrib.exe")
     try:
         # executa ungrib.exe
-        result = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
+        ls_res = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
         with open(os.path.join(ls_dir_log, "ungrib.out"), 'w') as lfh:
             # save output
-            lfh.writelines(result)
+            lfh.writelines(ls_res)
 
     # em caso de erro,...
     except subprocess.CalledProcessError:
@@ -398,12 +391,12 @@ def process_WPS(f_config, fs_cfg_pn, f_data):
     M_LOG.debug("Execução do metgrid.exe")
     try:
         # executa metgrid.exe
-        result = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
+        ls_res = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
         with open(os.path.join(ls_dir_log, "metgrid.out"), 'w') as lfh:
             # save output
-            lfh.writelines(result)
+            lfh.writelines(ls_res)
 
     # em caso de erro,...
     except subprocess.CalledProcessError:
@@ -449,25 +442,22 @@ def process_WRF(f_config, f_data):
     # vai para o diretório de execução do WRF
     os.chdir(l_wrf["dir_wrf_exec"])
 
-    # namelist.input
-    ls_namelist_file = "namelist.input"
-    
     # logger
-    M_LOG.info("Criando namelist WRF: %s", ls_namelist_file)
+    M_LOG.info("Criando namelist WRF: namelist.input")
 
     # cria namelist.input
-    mnl.cria_namelist_WRF(ls_namelist_file, f_config, f_data)
+    mnl.cria_namelist_WRF("namelist.input", f_config, f_data)
 
     # logger
     M_LOG.info("Execução do real.exe")
     try:
         # executa real.exe
-        result = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
+        ls_res = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
         with open(os.path.join(ls_dir_log, "real.out"), 'w') as lfh:
             # save output
-            lfh.writelines(result)
+            lfh.writelines(ls_res)
 
     # em caso de erro,...
     except subprocess.CalledProcessError:
@@ -490,12 +480,12 @@ def process_WRF(f_config, f_data):
         ls_cmd_exe = "./wrf.exe"
 
         # executa o WRF com multiprocessamento (mpirun)
-        result = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
+        ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
 
         # create output file
         with open(os.path.join(ls_dir_log, "wrf.out"), 'w') as lfh:
             # save output
-            lfh.writelines(result)
+            lfh.writelines(ls_res)
 
     # em caso de erro,...
     except subprocess.CalledProcessError:
@@ -527,27 +517,27 @@ def main():
     drive app
     """
     # check parameters
-    l_data, l_hora_prev, ls_regiao = arg_parse()
+    lo_data, li_hora_prev, ls_regiao = arg_parse()
 
     # load config file
-    l_config, ls_cfg_pn = load_config(ls_regiao)
-    assert l_config
+    lo_config, ls_cfg_pn = load_config(ls_regiao)
+    assert lo_config
 
     # adjust config parameters
-    adjust_config(l_config, ls_cfg_pn, l_data, l_hora_prev, ls_regiao)
+    adjust_config(lo_config, ls_cfg_pn, lo_data, li_hora_prev, ls_regiao)
 
     # logger
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))
 
     # download dos arquivos FNL
-    # dwn.downloadFNL(v_data, v_hora_ini, l_hora_prev)
+    # dwn.download_FNL(l_date, li_hora_prev)
 
     # process WPS
-    process_WPS(l_config, ls_cfg_pn, l_data)
+    process_WPS(lo_config, ls_cfg_pn, lo_data)
     # process WRF
-    process_WRF(l_config, l_data)
+    process_WRF(lo_config, lo_data)
     # process ARWPost
-    process_ARW(l_config, l_data)
+    process_ARW(lo_config, lo_data)
 
     # logger
     M_LOG.info("Fim de execução !")
