@@ -530,7 +530,7 @@ def main():
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))
 
     # download dos arquivos FNL
-    # dwn.download_FNL(l_date, li_hora_prev)
+    dwn.download_FNL(l_date, li_hora_prev)
 
     # process WPS
     process_WPS(lo_config, ls_cfg_pn, lo_data)
