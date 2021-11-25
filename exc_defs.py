@@ -8,6 +8,7 @@ exc_defs
 
 # python library
 import logging
+import os
 
 # < defines >--------------------------------------------------------------------------------------
 

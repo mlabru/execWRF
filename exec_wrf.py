@@ -553,6 +553,7 @@ def main():
 if "__main__" == __name__:
     # logger
     logging.basicConfig(filename="wrf.log",
+                        filemode='w',
                         datefmt="%d/%m/%Y %H:%M",
                         format="%(asctime)s %(message)s",
                         level=logging.DEBUG)
