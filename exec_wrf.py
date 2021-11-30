@@ -66,23 +66,31 @@ def adjust_config(fo_config, fs_cfg_pn, fo_date, fi_tempo, fs_regiao):
     # parser das variáveis de configuração
     ldt_ini = fo_date["data"]["data_ini"]
 
+    # parser das variáveis de configuração
+    li_hora_ini = int(fo_date["data"]["hora_ini"])
+
     # diretório dos executáveis
     l_wrf["dir_wrf_exec"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wrf_exec"])
 
     # diretório do FNL
     l_wrf["dir_fnl"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_fnl"])
     # diretório do GFS
-    l_wrf["dir_gfs"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_gfs"])
+    # l_wrf["dir_gfs"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_gfs"])
     # diretório do WPS
     l_wrf["dir_wps"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wps"])
     # diretório do ARW
     l_wrf["dir_arw"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_arw"])
+    # diretório do GEOG
+    l_wrf["dir_wrf_geog"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wrf_geog"])
+
+    # token
+    ls_token = "{}.{}{:02d}{:02d}".format(fs_regiao, ldt_ini, li_hora_ini, fi_tempo)
 
     # diretório de saída
-    l_wrf["dir_out"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], f"wrf.{fs_regiao}.{ldt_ini}")
+    l_wrf["dir_out"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], f"wrf.{ls_token}")
 
     # diretório do log
-    l_wrf["dir_log"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_log"], f"wrf.{fs_regiao}.{ldt_ini}")
+    l_wrf["dir_log"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_log"], f"wrf.{ls_token}")
 
 # -------------------------------------------------------------------------------------------------
 def arg_parse():
@@ -234,7 +242,7 @@ def process_ARW(fo_config, fo_date):
     os.chdir(ls_dir_arw)
 
     # para todos os domínios...
-    for li_dom in (1, int(fo_config["CONFIG"]["p_maxdom"])):
+    for li_dom in range(1, int(fo_config["CONFIG"]["p_maxdom"]) + 1):
         # logger
         M_LOG.info("Criando namelist ARWpost: namelist.ARWpost D0%d", li_dom)
 
@@ -254,6 +262,7 @@ def process_ARW(fo_config, fo_date):
 
             # for all arquivos de saida...
             for lfile in glob.glob(f"wrfd{li_dom}*"):
+                # logger
                 M_LOG.debug("movendo: %s", lfile)
                 # move os arquivos gerados para o diretório de saída
                 shutil.move(lfile, os.path.join(ls_dir_out, os.path.basename(lfile)))
@@ -267,6 +276,7 @@ def process_ARW(fo_config, fo_date):
 
     # for all wrfout files...
     for lfile in glob.glob("wrfout*"):
+        # logger
         M_LOG.debug("removendo: %s", lfile)
         # remove file
         os.remove(lfile)
@@ -309,7 +319,7 @@ def process_WPS(fo_config, fs_cfg_pn, fo_date):
         M_LOG.info("Criando diretório de saída: %s", ls_dir_out)
         # cria diretório de saída
         os.makedirs(ls_dir_out)
-
+    '''
     # diretório do GFS
     ls_dir_gfs = l_wrf["dir_gfs"]
 
@@ -319,18 +329,31 @@ def process_WPS(fo_config, fs_cfg_pn, fo_date):
         M_LOG.info("Criando diretório do GFS: %s", ls_dir_gfs)
         # cria diretório do GFS
         os.makedirs(ls_dir_gfs)
+    '''
+    # logger
+    M_LOG.info("Removendo arquivos temporários anteriores.")
 
     # vai para o diretório dos executáveis do WRF
     os.chdir(l_wrf["dir_wrf_exec"])
 
     # para todos os arquivos de trabalho do WRF...
     for lfile in glob.glob("met_*"):
+        # logger
         M_LOG.debug("removendo: %s", lfile)
         # remove o arquivo
         os.remove(lfile)
 
     # vai para o diretório de execução do WPS
     os.chdir(l_wrf["dir_wps"])
+
+    # for all temp files...
+    for ls_tmp in ["GFS*", "geo_em*", "PFILE*", "FILE*", "GRIBFILE*"]:
+        # for all files with extension...
+        for lfile in glob.glob(ls_tmp):
+            # logger
+            M_LOG.debug("removendo: %s", lfile)
+            # remove o arquivo
+            os.remove(lfile)
 
     # logger
     M_LOG.info("Criando namelist WPS: namelist.wps")
@@ -360,10 +383,10 @@ def process_WPS(fo_config, fs_cfg_pn, fo_date):
     ldt_ini = fo_date["data"]["data_ini"]
 
     # logger
-    M_LOG.info("Criando links dos arquivos GFS")
+    M_LOG.info("Criando links dos arquivos FNL")
     try:
         # comando
-        ls_cmd_exe = "./link_grib.csh " + os.path.join(l_wrf["dir_gfs"], f"{ldt_ini}", "*")
+        ls_cmd_exe = "./link_grib.csh " + os.path.join(l_wrf["dir_fnl"], "*")
         # executa link_grib.csh
         ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
 
@@ -375,7 +398,7 @@ def process_WPS(fo_config, fs_cfg_pn, fo_date):
         sys.exit(1)
 
     # logger
-    M_LOG.debug("Execução do ungrib.exe")
+    M_LOG.info("Execução do ungrib.exe")
     try:
         # executa ungrib.exe
         ls_res = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
@@ -393,7 +416,7 @@ def process_WPS(fo_config, fs_cfg_pn, fo_date):
         sys.exit(1)
 
     # logger
-    M_LOG.debug("Execução do metgrid.exe")
+    M_LOG.info("Execução do metgrid.exe")
     try:
         # executa metgrid.exe
         ls_res = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
@@ -410,16 +433,21 @@ def process_WPS(fo_config, fs_cfg_pn, fo_date):
         # abort
         sys.exit(1)
 
-    # for all extensions...
-    for ls_ext in ["GFS", "geo_em", "PFILE", "FILE", "GRIBFILE"]:
+    # logger
+    M_LOG.info("(Re)movendo arquivos temporários.")
+
+    # for all temp files...
+    for ls_tmp in ["GFS*", "geo_em*", "PFILE*", "FILE*", "GRIBFILE*"]:
         # for all files with extension...
-        for lfile in glob.glob(ls_ext + '*'):
+        for lfile in glob.glob(ls_tmp):
+            # logger
             M_LOG.debug("removendo: %s", lfile)
             # remove o arquivo
             os.remove(lfile)
 
     # for all log files...
     for lfile in glob.glob("*.log"):
+        # logger
         M_LOG.debug("copiando: %s", lfile)
         # move os arquivos de log do WPS para o diretório de log
         shutil.copy(lfile, ls_dir_log)
@@ -470,6 +498,7 @@ def process_WRF(fo_config, fo_date):
         M_LOG.error("Erro ao executar real.exe")
         # for all rsl.error files...
         for lfile in glob.glob("rsl.error.*"):
+            # logger
             M_LOG.debug("movendo: %s", lfile)
             # salva o log do erro
             shutil.move(lfile, os.path.join(ls_dir_log, lfile))
@@ -481,8 +510,7 @@ def process_WRF(fo_config, fo_date):
     try:
         # comando
         # ls_cmd_exe = "mpirun -np 24 ./wrf.exe"
-        # ls_cmd_exe = "mpirun --use-hwthread-cpus -np 7 ./wrf.exe"
-        ls_cmd_exe = "./wrf.exe"
+        ls_cmd_exe = "mpirun --use-hwthread-cpus -np 7 ./wrf.exe"
 
         # executa o WRF com multiprocessamento (mpirun)
         ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
@@ -498,20 +526,26 @@ def process_WRF(fo_config, fo_date):
         M_LOG.error("Erro ao executar wrf.exe")
         # for all rsl.error files...
         for lfile in glob.glob("rsl.error.*"):
+            # logger
             M_LOG.debug("movendo: %s", lfile)
             # salva o log do erro
             shutil.move(lfile, os.path.join(ls_dir_log, lfile))
         # abort
         sys.exit(1)
 
+    # logger
+    M_LOG.info("(Re)movendo arquivos temporários.")
+
     # for all wrfout files...
     for lfile in glob.glob("wrfout_*"):
+        # logger
         M_LOG.debug("movendo: %s", lfile)
         # move os arquivos de saída wrfout_* para o diretório do ARWPost
         shutil.move(lfile, os.path.join(l_wrf["dir_arw"], lfile))
 
     # for all met*.nc files...
     for lfile in glob.glob("met*.nc"):
+        # logger
         M_LOG.debug("removendo: %s", lfile)
         # remove file
         os.remove(lfile)
