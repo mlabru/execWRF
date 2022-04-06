@@ -9,11 +9,14 @@ exc_namelist
 # python library
 import logging
 
+# local
+import exc_defs as df
+
 # < logging >--------------------------------------------------------------------------------------
 
 # logger
 M_LOG = logging.getLogger(__name__)
-M_LOG.setLevel(logging.DEBUG)
+M_LOG.setLevel(df.DI_LOG_LEVEL)
 
 # -------------------------------------------------------------------------------------------------
 def cria_namelist_ARWPost(fs_namelist_file, f_config, f_data, fi_dom):

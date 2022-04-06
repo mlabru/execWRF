@@ -7,8 +7,20 @@ exc_defs
 # < imports >--------------------------------------------------------------------------------------
 
 # python library
+import ast
 import logging
 import os
+
+# .env
+from dotenv import load_dotenv
+
+# < environment >------------------------------------------------------------------------------
+
+# take environment variables from .env
+load_dotenv()
+
+# NCAR login
+DDCT_VALUES = ast.literal_eval(os.getenv("DDCT_VALUES"))
 
 # < defines >--------------------------------------------------------------------------------------
 
@@ -21,13 +33,5 @@ DI_INTERVALO = 6
 
 # WFR home dir
 DS_WRF_HOME = os.path.expanduser("~/WRF")
-
-# -------------------------------------------------------------------------------------------------
-import imp
-
-# open secrets files
-with open(".hidden/cls_secrets.py", "rb") as lfh:
-    # import module
-    hs = imp.load_module(".hidden", lfh, ".hidden/cls_secrets", (".py", "rb", imp.PY_SOURCE))
 
 # < the end >--------------------------------------------------------------------------------------
