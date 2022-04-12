@@ -13,6 +13,9 @@ import os
 import requests
 import sys
 
+# graylog
+import graypy
+
 # local
 import exc_defs as df
 
@@ -31,6 +34,10 @@ DS_PATH = "https://rda.ucar.edu/data/ds083.2"
 # logger
 M_LOG = logging.getLogger(__name__)
 M_LOG.setLevel(df.DI_LOG_LEVEL)
+
+# graylog handler
+M_GLH = graypy.GELFUDPHandler("localhost", 12201)
+M_LOG.addHandler(M_GLH)
 
 # -------------------------------------------------------------------------------------------------
 def check_file_status(fs_filepath, fi_filesize):

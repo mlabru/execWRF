@@ -9,11 +9,9 @@ exec_wrf
 # python library
 import configparser
 import datetime
-import glob
 import logging
 import os
 import shutil
-import subprocess
 import sys
 
 # graylog
@@ -23,6 +21,7 @@ import graypy
 import exc_defs as df
 import exc_download as dwn
 import exc_namelist as mnl
+import exc_processes as prc
 
 # < defines >----------------------------------------------------------------------------------
 
@@ -44,11 +43,11 @@ M_GLH = graypy.GELFUDPHandler("localhost", 12201)
 M_LOG.addHandler(M_GLH)
 
 # ---------------------------------------------------------------------------------------------
-def adjust_config(fo_config, fs_cfg_pathname, fi_forecast_time, fs_token):
+def adjust_config(fo_cfg_parser, fs_cfg_pathname, fi_forecast_time, fs_token):
     """
     ajusta a configuração dos parâmetros de previsão
 
-    :param fo_config (ConfigParser): dados de configuração
+    :param fo_cfg_parser (ConfigParser): dados de configuração
     :param fs_cfg_pathname (str): pathname do arquivo de configuração
     :param fi_forecast_time (int): tempo de previsão
     :param fs_token (str): forecast id
@@ -57,15 +56,15 @@ def adjust_config(fo_config, fs_cfg_pathname, fi_forecast_time, fs_token):
     M_LOG.debug("adjust_config >>")
 
     # calcula o valor de l_n_dx
-    fo_config["CONFIG"]["l_n_dx"] = fo_config["CONFIG"]["p_dx"].replace(',', '')
+    fo_cfg_parser["CONFIG"]["l_n_dx"] = fo_cfg_parser["CONFIG"]["p_dx"].replace(',', '')
 
     # recria o arquivo de configuração
     with open(fs_cfg_pathname, 'w') as lfh:
         # grava no arquivo de configuração
-        fo_config.write(lfh)
+        fo_cfg_parser.write(lfh)
 
     # WRF section
-    l_wrf = fo_config["WRF"]
+    l_wrf = fo_cfg_parser["WRF"]
     assert l_wrf
 
     # horas de previsão
@@ -85,9 +84,9 @@ def adjust_config(fo_config, fs_cfg_pathname, fi_forecast_time, fs_token):
     # diretório do GEOG
     l_wrf["dir_wrf_geog"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wrf_geog"])
     # diretório de saída
-    l_wrf["dir_out"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], f"wrf.{fs_token}")
+    l_wrf["dir_out"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], fs_token)
     # diretório do log
-    l_wrf["dir_log"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_log"], f"wrf.{fs_token}")
+    l_wrf["dir_log"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_log"], fs_token)
 
 # ---------------------------------------------------------------------------------------------
 def arg_parse():
@@ -138,7 +137,7 @@ def arg_parse():
     ls_regiao = ls_regiao if ls_regiao in DLST_REGIAO_OK \
                           else print_usage(f"Erro: região ({ls_regiao}) inválida.")
 
-    # calcula a data final (data inicial + horas de previsão):
+    # calcula a data final = data inicial + horas de previsão:
     ldt_final = datetime.datetime(li_ano_ini, li_mes_ini, li_dia_ini, li_hora_ini, 0, 0) + \
                 datetime.timedelta(hours=li_forecast_time)
 
@@ -189,7 +188,34 @@ def build_token(fo_forecast_date, fi_forecast_time, fs_regiao):
     li_hora_ini = int(fo_forecast_date["data"]["hora_ini"])
 
     # return token
-    return "{}.{}{:02d}{:02d}".format(fs_regiao, ldt_ini, li_hora_ini, fi_forecast_time)
+    return "{}{:02d}{:02d}{}".format(ldt_ini, li_hora_ini, fi_forecast_time, fs_regiao)
+
+# ---------------------------------------------------------------------------------------------
+def forecast_exists(fo_cfg_parser, fs_token):
+    """
+    verifica se a previsão já existe
+
+    :param fo_cfg_parser (ConfigParser): dados de configuração
+    :param fs_token (str): token id
+
+    :returns: True if exists or False
+    """
+    # logger
+    M_LOG.debug("forecast_exists >>")
+
+    # WRF section
+    l_wrf = fo_cfg_parser["WRF"]
+    assert l_wrf
+
+    # outrput dir 
+    ls_tgz_file = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], fs_token)
+
+    # tgz output file
+    ls_tgz_file += ".tgz"
+    M_LOG.debug("ls_tgz_file: %s", str(ls_tgz_file)) 
+
+    # return
+    return os.path.isfile(ls_tgz_file)
 
 # ---------------------------------------------------------------------------------------------
 def load_config(fs_regiao):
@@ -214,7 +240,7 @@ def load_config(fs_regiao):
         # logger
         M_LOG.error("Não foi encontrado o arquivo de configuração: %s.", ls_cfg_fullpath, exc_info=1)
         # abort
-        sys.exit(1)
+        sys.exit(-1)
 
     # cria o parser de configuração
     lo_cfg_parser = configparser.ConfigParser()
@@ -228,6 +254,25 @@ def load_config(fs_regiao):
 
     # return
     return lo_cfg_parser, ls_cfg_fullpath
+
+# ---------------------------------------------------------------------------------------------
+def make_tgz_file(fo_cfg_parser, fs_token):
+    """
+    create a tgz file
+    """
+    # logger
+    M_LOG.debug("make_tgz_file >>")
+
+    # source directory (/home/webpca/WRF/data/out/<token>)
+    ls_source_dir = fo_cfg_parser["WRF"]["dir_out"]
+
+    # output filepath (/home/webpca/WRF/data/out/<token>.tgz)
+    ls_tgz_filepath = ls_source_dir + ".tgz"
+
+    # create tgz file
+    with tarfile.open(ls_tgz_filepath, "w:gz") as lfh:
+        # add directory to tgz 
+        lfh.add(ls_source_dir, arcname=os.path.basename(ls_source_dir))
 
 # ---------------------------------------------------------------------------------------------
 def print_usage(fs_msg):
@@ -255,357 +300,24 @@ def print_usage(fs_msg):
     print("    E-MAIL = E-mail para resposta (opcional)")
 
     # abort
-    sys.exit(1)
+    sys.exit(-1)
 
 # ---------------------------------------------------------------------------------------------
-def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
+def touch_tgz_file(fo_cfg_parser, fs_token):
     """
-    processa ARWpost:
-    - cria namelist.ARWpost
-    - executa ARWpost para o número de domínios definidos em wrf.conf
-
-    :param fo_cfg_parser (ConfigParser): dados de configuração
-    :param fo_forecast_date (ConfigParser): dados da data de previsão
-    :param fs_token (str): forecast id
+    update date & time of a tgz file
     """
     # logger
-    M_LOG.debug("process_ARW >>")
+    M_LOG.debug("touch_tgz_file >>")
 
-    # logger
-    M_LOG.info("Início do ARWpost: %s.", str(datetime.datetime.now()))
+    # source directory (/home/webpca/WRF/data/out + fs_token)
+    ls_source_dir = os.path.join(fo_cfg_parser["WRF"]["dir_out"], fs_token)
 
-    # WRF section
-    l_wrf = fo_cfg_parser["WRF"]
-    assert l_wrf
+    # output filepath (/home/webpca/WRF/data/out/<token>.tgz)
+    ls_tgz_filepath = ls_source_dir + ".tgz"
 
-    # cria diretório de log
-    ls_dir_log = l_wrf["dir_log"]
-    # diretório do ARW
-    ls_dir_arw = l_wrf["dir_arw"]
-    # diretório de saída
-    ls_dir_out = l_wrf["dir_out"]
-
-    # vai para o diretório dos executáveis do ARWpost
-    os.chdir(ls_dir_arw)
-
-    # para todos os domínios...
-    for li_dom in range(1, int(fo_cfg_parser["CONFIG"]["p_maxdom"]) + 1):
-        # logger
-        M_LOG.info("Criando namelist ARWpost: namelist.ARWpost D0%d", li_dom)
-
-        # cria namelist.ARWpost
-        mnl.cria_namelist_ARWPost("namelist.ARWpost", fo_cfg_parser, fo_forecast_date, li_dom)
-
-        # logger
-        M_LOG.info("Execução do ARWpost.exe para o domínio %d", li_dom)
-        try:
-            # executa ARWpost.exe
-            ls_res = subprocess.check_output("./ARWpost.exe", shell=True).decode(sys.stdout.encoding)
-
-            # create output file
-            with open(os.path.join(ls_dir_log, f"arwpostD{li_dom}.out"), 'w') as lfh:
-                # save output
-                lfh.writelines(ls_res)
-
-            # for all arquivos de saida...
-            for lfile in glob.glob(f"wrfd{li_dom}*"):
-                # logger
-                M_LOG.debug("movendo: %s", lfile)
-                # move os arquivos gerados para o diretório de saída
-                shutil.move(lfile, os.path.join(ls_dir_out, os.path.basename(lfile)))
-
-            # create file with output directory
-            with open(os.path.join("/tmp", fs_token), 'w') as lfh:
-                # save output
-                lfh.writelines(ls_dir_out)
-
-        # em caso de erro,...
-        except subprocess.CalledProcessError:
-            # logger
-            M_LOG.error("Erro ao executar ARWpost.exe", exc_info=1)
-            # abort
-            sys.exit(1)
-
-    # for all wrfout files...
-    for lfile in glob.glob("wrfout*"):
-        # logger
-        M_LOG.debug("removendo: %s", lfile)
-        # remove file
-        os.remove(lfile)
-
-# ---------------------------------------------------------------------------------------------
-def process_WPS(fo_cfg_parser, fo_forecast_date):
-    """
-    processa WPS:
-    - cria o arquivo namelist.wps
-    - geogrid.exe => link_grib.csh => ungrib.exe => metgrid.exe
-    - remove os arquivos que não serão utilizados
-
-    :param fo_cfg_parser (ConfigParser): dados de configuração
-    :param fo_forecast_date (ConfigParser): dados da data de previsão
-    """
-    # logger
-    M_LOG.debug("process_WPS >>")
-
-    # logger
-    M_LOG.info("Início do WPS: %s.", str(datetime.datetime.now()))
-
-    # WRF section
-    l_wrf = fo_cfg_parser["WRF"]
-    assert l_wrf
-
-    # cria diretório de log
-    ls_dir_log = l_wrf["dir_log"]
-
-    # diretório de log existe ?
-    if not os.path.exists(ls_dir_log):
-        # logger
-        M_LOG.info("Criando diretório de log: %s", ls_dir_log)
-        # cria diretório de log
-        os.makedirs(ls_dir_log)
-
-    # diretório de saída
-    ls_dir_out = l_wrf["dir_out"]
-
-    # diretório de saída existe ?
-    if not os.path.exists(ls_dir_out):
-        # logger
-        M_LOG.info("Criando diretório de saída: %s", ls_dir_out)
-        # cria diretório de saída
-        os.makedirs(ls_dir_out)
-    '''
-    # diretório do GFS
-    ls_dir_gfs = l_wrf["dir_gfs"]
-
-    # diretório dos arquivos GFS existe ?
-    if not os.path.exists(ls_dir_gfs):
-        # logger
-        M_LOG.info("Criando diretório do GFS: %s", ls_dir_gfs)
-        # cria diretório do GFS
-        os.makedirs(ls_dir_gfs)
-    '''
-    # logger
-    M_LOG.info("Removendo arquivos temporários anteriores.")
-
-    # vai para o diretório dos executáveis do WRF
-    os.chdir(l_wrf["dir_wrf_exec"])
-
-    # para todos os arquivos de trabalho do WRF...
-    for lfile in glob.glob("met_*"):
-        # logger
-        M_LOG.debug("removendo: %s", lfile)
-        # remove o arquivo
-        os.remove(lfile)
-
-    # vai para o diretório de execução do WPS
-    os.chdir(l_wrf["dir_wps"])
-
-    # for all temp files...
-    for ls_tmp in ["GFS*", "geo_em*", "PFILE*", "FILE*", "GRIBFILE*"]:
-        # for all files with extension...
-        for lfile in glob.glob(ls_tmp):
-            # logger
-            M_LOG.debug("removendo: %s", lfile)
-            # remove o arquivo
-            os.remove(lfile)
-
-    # logger
-    M_LOG.info("Criando namelist WPS: namelist.wps")
-
-    # cria namelist.wps
-    mnl.cria_namelist_WPS("namelist.wps", fo_cfg_parser, fo_forecast_date)
-
-    # logger
-    M_LOG.info("Execução do geogrid.exe")
-    try:
-        # executa geogrid.exe
-        ls_res = subprocess.check_output("./geogrid.exe", shell=True).decode(sys.stdout.encoding)
-
-        # create output file
-        with open(os.path.join(ls_dir_log, "geogrid.out"), 'w') as lfh:
-            # save output
-            lfh.writelines(ls_res)
-
-    # em caso de erro,...
-    except subprocess.CalledProcessError:
-        # logger
-        M_LOG.error("Erro na execução do geogrid.exe", exc_info=1)
-        # abort
-        sys.exit(1)
-
-    # data de início da previsão
-    ldt_ini = fo_forecast_date["data"]["data_ini"]
-
-    # logger
-    M_LOG.info("Criando links dos arquivos FNL")
-    try:
-        # comando
-        ls_cmd_exe = "./link_grib.csh " + os.path.join(l_wrf["dir_fnl"], "*")
-        # executa link_grib.csh
-        ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
-
-    # em caso de erro,...
-    except subprocess.CalledProcessError:
-        # logger
-        M_LOG.error("Erro na execução de link_grib.csh", exc_info=1)
-        # abort
-        sys.exit(1)
-
-    # logger
-    M_LOG.info("Execução do ungrib.exe")
-    try:
-        # executa ungrib.exe
-        ls_res = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
-
-        # create output file
-        with open(os.path.join(ls_dir_log, "ungrib.out"), 'w') as lfh:
-            # save output
-            lfh.writelines(ls_res)
-
-    # em caso de erro,...
-    except subprocess.CalledProcessError:
-        # logger
-        M_LOG.error("Erro ao executar ungrib.exe", exc_info=1)
-        # abort
-        sys.exit(1)
-
-    # logger
-    M_LOG.info("Execução do metgrid.exe")
-    try:
-        # executa metgrid.exe
-        ls_res = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
-
-        # create output file
-        with open(os.path.join(ls_dir_log, "metgrid.out"), 'w') as lfh:
-            # save output
-            lfh.writelines(ls_res)
-
-    # em caso de erro,...
-    except subprocess.CalledProcessError:
-        # logger
-        M_LOG.error("Erro ao executar metgrid.exe", exc_info=1)
-        # abort
-        sys.exit(1)
-
-    # logger
-    M_LOG.info("(Re)movendo arquivos temporários.")
-
-    # for all temp files...
-    for ls_tmp in ["GFS*", "geo_em*", "PFILE*", "FILE*", "GRIBFILE*"]:
-        # for all files with extension...
-        for lfile in glob.glob(ls_tmp):
-            # logger
-            M_LOG.debug("removendo: %s", lfile)
-            # remove o arquivo
-            os.remove(lfile)
-
-    # for all log files...
-    for lfile in glob.glob("*.log"):
-        # logger
-        M_LOG.debug("copiando: %s", lfile)
-        # move os arquivos de log do WPS para o diretório de log
-        shutil.copy(lfile, ls_dir_log)
-
-# ---------------------------------------------------------------------------------------------
-def process_WRF(fo_cfg_parser, fo_forecast_date):
-    """
-    processa WRF:
-    - real.exe => wrf.exe => move wrfout_* para diretorio ARWPost
-    - remove os arquivos que não serão utilizados
-
-    :param fo_cfg_parser (ConfigParser): dados de configuração
-    :param fo_forecast_date (ConfigParser): dados da data de previsão
-    """
-    # logger
-    M_LOG.debug("process_WRF >>")
-
-    # logger
-    M_LOG.info("Início do WRF: %s.", str(datetime.datetime.now()))
-
-    # WRF section
-    l_wrf = fo_cfg_parser["WRF"]
-    assert l_wrf
-
-    # diretório de log
-    ls_dir_log = l_wrf["dir_log"]
-
-    # vai para o diretório de execução do WRF
-    os.chdir(l_wrf["dir_wrf_exec"])
-
-    # logger
-    M_LOG.info("Criando namelist WRF: namelist.input")
-
-    # cria namelist.input
-    mnl.cria_namelist_WRF("namelist.input", fo_cfg_parser, fo_forecast_date)
-
-    # logger
-    M_LOG.info("Execução do real.exe")
-    try:
-        # executa real.exe
-        ls_res = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
-
-        # create output file
-        with open(os.path.join(ls_dir_log, "real.out"), 'w') as lfh:
-            # save output
-            lfh.writelines(ls_res)
-
-    # em caso de erro,...
-    except subprocess.CalledProcessError:
-        # logger
-        M_LOG.error("Erro ao executar real.exe", exc_info=1)
-        # for all rsl.error files...
-        for lfile in glob.glob("rsl.error.*"):
-            # logger
-            M_LOG.debug("movendo: %s", lfile)
-            # salva o log do erro
-            shutil.move(lfile, os.path.join(ls_dir_log, lfile))
-        # abort
-        sys.exit(1)
-
-    # logger
-    M_LOG.info("Execução do wrf.exe")
-    try:
-        # comando
-        # ls_cmd_exe = "mpirun -np 24 ./wrf.exe"
-        ls_cmd_exe = "mpirun --use-hwthread-cpus -np 7 ./wrf.exe"
-
-        # executa o WRF com multiprocessamento (mpirun)
-        ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
-
-        # create output file
-        with open(os.path.join(ls_dir_log, "wrf.out"), 'w') as lfh:
-            # save output
-            lfh.writelines(ls_res)
-
-    # em caso de erro,...
-    except subprocess.CalledProcessError:
-        # logger
-        M_LOG.error("Erro ao executar wrf.exe", exc_info=1)
-        # for all rsl.error files...
-        for lfile in glob.glob("rsl.error.*"):
-            # logger
-            M_LOG.debug("movendo: %s", lfile)
-            # salva o log do erro
-            shutil.move(lfile, os.path.join(ls_dir_log, lfile))
-        # abort
-        sys.exit(1)
-
-    # logger
-    M_LOG.info("(Re)movendo arquivos temporários.")
-
-    # for all wrfout files...
-    for lfile in glob.glob("wrfout_*"):
-        # logger
-        M_LOG.debug("movendo: %s", lfile)
-        # move os arquivos de saída wrfout_* para o diretório do ARWPost
-        shutil.move(lfile, os.path.join(l_wrf["dir_arw"], lfile))
-
-    # for all met*.nc files...
-    for lfile in glob.glob("met*.nc"):
-        # logger
-        M_LOG.debug("removendo: %s", lfile)
-        # remove file
-        os.remove(lfile)
+    # touch file
+    pathlib.Path(ls_tgz_filepath).touch()
 
 # ---------------------------------------------------------------------------------------------
 def main():
@@ -628,18 +340,29 @@ def main():
     lo_cfg_parser, ls_cfg_fullpath = load_config(ls_regiao)
     assert lo_cfg_parser
 
-    # adjust config parameters
-    adjust_config(lo_cfg_parser, ls_cfg_fullpath, li_forecast_time, ls_token)
+    # forecast already exists ?
+    if not forecast_exists(lo_cfg_parser, ls_token):
+        # adjust config parameters
+        adjust_config(lo_cfg_parser, ls_cfg_fullpath, li_forecast_time, ls_token)
 
-    # download dos arquivos FNL
-    dwn.download_FNL(lo_forecast_date, li_forecast_time, lo_cfg_parser["WRF"]["dir_fnl"])
+        # download dos arquivos FNL
+        dwn.download_FNL(lo_forecast_date, li_forecast_time, lo_cfg_parser["WRF"]["dir_fnl"])
 
-    # process WPS
-    process_WPS(lo_cfg_parser, lo_forecast_date)
-    # process WRF
-    process_WRF(lo_cfg_parser, lo_forecast_date)
-    # process ARWPost
-    process_ARW(lo_cfg_parser, lo_forecast_date, ls_token)
+        # process WRF
+        prc.process_all(lo_cfg_parser, lo_forecast_date, ls_token)
+
+        # make tgz file
+        make_tgz_file(lo_cfg_parser, ls_token)
+
+        # remove output directory tree
+        shutil.rmtree(lo_cfg_parser["WRF"]["dir_out"])
+
+    # senão,...
+    else:
+        # touch tgz file
+        touch_tgz_file(lo_cfg_parser, ls_token)
+
+    # envia e-mail com link
 
     # logger
     M_LOG.info("Fim de execução !")
