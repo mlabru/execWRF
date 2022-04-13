@@ -2,6 +2,7 @@
 """
 exec_wrf
 
+2022/apr  1.1  mlabru  graylog log management
 2021/nov  1.0  eliana  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
@@ -11,8 +12,10 @@ import configparser
 import datetime
 import logging
 import os
+import pathlib
 import shutil
 import sys
+import tarfile
 
 # graylog
 import graypy
@@ -20,7 +23,6 @@ import graypy
 # local
 import exc_defs as df
 import exc_download as dwn
-import exc_namelist as mnl
 import exc_processes as prc
 
 # < defines >----------------------------------------------------------------------------------
@@ -75,8 +77,6 @@ def adjust_config(fo_cfg_parser, fs_cfg_pathname, fi_forecast_time, fs_token):
     l_wrf["dir_wrf_exec"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wrf_exec"])
     # diretório do FNL
     l_wrf["dir_fnl"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_fnl"])
-    # diretório do GFS
-    # l_wrf["dir_gfs"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_gfs"])
     # diretório do WPS
     l_wrf["dir_wps"] = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_wps"])
     # diretório do ARW
@@ -209,10 +209,8 @@ def forecast_exists(fo_cfg_parser, fs_token):
 
     # outrput dir 
     ls_tgz_file = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], fs_token)
-
     # tgz output file
     ls_tgz_file += ".tgz"
-    M_LOG.debug("ls_tgz_file: %s", str(ls_tgz_file)) 
 
     # return
     return os.path.isfile(ls_tgz_file)
@@ -220,7 +218,7 @@ def forecast_exists(fo_cfg_parser, fs_token):
 # ---------------------------------------------------------------------------------------------
 def load_config(fs_regiao):
     """
-    configura o parser de leitura do wrf.conf
+    configura o parser de leitura do wrf_?.conf
 
     :param fs_regiao (str): região de previsão
 
@@ -238,7 +236,7 @@ def load_config(fs_regiao):
     # arquivo de configuração não existe ?
     if not os.path.exists(ls_cfg_fullpath):
         # logger
-        M_LOG.error("Não foi encontrado o arquivo de configuração: %s.", ls_cfg_fullpath, exc_info=1)
+        M_LOG.critical("Não foi encontrado o arquivo de configuração: %s.", ls_cfg_fullpath, exc_info=1)
         # abort
         sys.exit(-1)
 
@@ -259,6 +257,9 @@ def load_config(fs_regiao):
 def make_tgz_file(fo_cfg_parser, fs_token):
     """
     create a tgz file
+
+    :param fo_cfg_parser (ConfigParser): dados de configuração
+    :param fs_token (str): token id
     """
     # logger
     M_LOG.debug("make_tgz_file >>")
@@ -278,6 +279,8 @@ def make_tgz_file(fo_cfg_parser, fs_token):
 def print_usage(fs_msg):
     """
     imprime na tela os argumentos de entrada válidos
+
+    :param fs_msg (str): error message
     """
     # logger
     M_LOG.debug("print_usage >>")
@@ -306,12 +309,19 @@ def print_usage(fs_msg):
 def touch_tgz_file(fo_cfg_parser, fs_token):
     """
     update date & time of a tgz file
+
+    :param fo_cfg_parser (ConfigParser): dados de configuração
+    :param fs_token (str): token id
     """
     # logger
     M_LOG.debug("touch_tgz_file >>")
 
+    # WRF section
+    l_wrf = fo_cfg_parser["WRF"]
+    assert l_wrf
+
     # source directory (/home/webpca/WRF/data/out + fs_token)
-    ls_source_dir = os.path.join(fo_cfg_parser["WRF"]["dir_out"], fs_token)
+    ls_source_dir = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], fs_token)
 
     # output filepath (/home/webpca/WRF/data/out/<token>.tgz)
     ls_tgz_filepath = ls_source_dir + ".tgz"
@@ -362,8 +372,6 @@ def main():
         # touch tgz file
         touch_tgz_file(lo_cfg_parser, ls_token)
 
-    # envia e-mail com link
-
     # logger
     M_LOG.info("Fim de execução !")
 
@@ -372,7 +380,7 @@ def main():
 
 if "__main__" == __name__:
     # logger
-    logging.basicConfig(filename="wrf.log",
+    logging.basicConfig(filename="logs/execWRF.log",
                         filemode='w',
                         datefmt="%d/%m/%Y %H:%M",
                         format="%(asctime)s %(message)s",

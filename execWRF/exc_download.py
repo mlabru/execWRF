@@ -2,9 +2,10 @@
 """ 
 exc_download
 
-2021/nov  1.0  eliana   initial version (Linux/Python)
+2022/apr  1.1  mlabru  graylog log management
+2021/nov  1.0  eliana  initial version (Linux/Python)
 """
-# < imports >--------------------------------------------------------------------------------------
+# < imports >----------------------------------------------------------------------------------
 
 # python library
 import datetime
@@ -19,7 +20,7 @@ import graypy
 # local
 import exc_defs as df
 
-# < defines >--------------------------------------------------------------------------------------
+# < defines >----------------------------------------------------------------------------------
 
 # chunk size
 DI_CHUNK_SIZE = 1048576
@@ -29,7 +30,7 @@ DS_URL = "https://rda.ucar.edu/cgi-bin/login"
 # NCAR data
 DS_PATH = "https://rda.ucar.edu/data/ds083.2"
 
-# < logging >--------------------------------------------------------------------------------------
+# < logging >----------------------------------------------------------------------------------
 
 # logger
 M_LOG = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ M_LOG.setLevel(df.DI_LOG_LEVEL)
 M_GLH = graypy.GELFUDPHandler("localhost", 12201)
 M_LOG.addHandler(M_GLH)
 
-# -------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 def check_file_status(fs_filepath, fi_filesize):
     """
     check file status
@@ -58,7 +59,7 @@ def check_file_status(fs_filepath, fi_filesize):
     sys.stdout.write("{0:.3f}% Completed".format((li_size / fi_filesize) * 100))
     sys.stdout.flush()
 
-# -------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 def _download_file(fs_file, f_cookies):
     """
     faz o download
@@ -83,12 +84,13 @@ def _download_file(fs_file, f_cookies):
     
     while li_retry > 0:
         # request file
-        lo_resp = requests.get(ls_file_url, cookies=f_cookies, allow_redirects=True, stream=True)
+        lo_resp = requests.get(ls_file_url, cookies=f_cookies,
+                                            allow_redirects=True,
+                                            stream=True)
 
         if 200 == lo_resp.status_code:
             # tamanho do arquivo
             li_filesize = int(lo_resp.headers["content-length"])
-            M_LOG.debug("li_filesize: %d", li_filesize)
 
             # abre o arquivo
             with open(ls_file_name, "wb") as lfh:
@@ -96,12 +98,12 @@ def _download_file(fs_file, f_cookies):
                 for lchunk in lo_resp.iter_content(chunk_size=DI_CHUNK_SIZE):
                     # grava o chunk no arquivo
                     lfh.write(lchunk)
-                    '''
+
                     # ainfa não terminou ?
-                    if DI_CHUNK_SIZE < li_filesize:
+                    # if DI_CHUNK_SIZE < li_filesize:
                         # exibe o status atual
-                        check_file_status(ls_file_name, li_filesize)
-                    '''
+                        # check_file_status(ls_file_name, li_filesize)
+
             # ok, quit
             break
 
@@ -117,7 +119,7 @@ def _download_file(fs_file, f_cookies):
         # abort
         sys.exit(-1)
         
-# -------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     """
     faz o download
@@ -152,17 +154,14 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     # vai para o diretório das FNLs
     os.chdir(fs_fnl_dir)
 
-    # logger
-    M_LOG.debug("DDCT_VALUES: %s", str(df.DDCT_VALUES))
-
     # authenticate
     lo_resp = requests.post(DS_URL, data=df.DDCT_VALUES)
 
     if 200 != lo_resp.status_code:
         # logger
-        M_LOG.error("Bad Authentication: %s", str(lo_resp.text), exc_info=1)
+        M_LOG.critical("Bad Authentication: %s", str(lo_resp.text), exc_info=1)
         # abort
-        exit(1)
+        sys.exit(-1)
 
     # tempo decorrido
     li_tempo_decorrido = 0
@@ -200,7 +199,7 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
             ls_ano = ls_data_ini[0:4]
             ls_mes = ls_data_ini[4:6]
 
-# -------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------
 # this is the bootstrap process
     
 if "__main__" == __name__:
@@ -216,4 +215,4 @@ if "__main__" == __name__:
     # run application
     download_FNL(ldct_date, 48)
     
-# < the end >--------------------------------------------------------------------------------------
+# < the end >----------------------------------------------------------------------------------

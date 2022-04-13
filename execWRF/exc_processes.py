@@ -2,7 +2,8 @@
 """
 exc_processes
 
-2021/nov  1.0  eliana   initial version (Linux/Python)
+2022/apr  1.1  mlabru  graylog log management
+2021/nov  1.0  eliana  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
 
@@ -14,13 +15,13 @@ import os
 import shutil
 import subprocess
 import sys
-import tarfile
 
 # graylog
 import graypy
 
 # local
 import exc_defs as df
+import exc_namelist as mnl
 
 # < logging >----------------------------------------------------------------------------------
 
@@ -99,8 +100,6 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
 
             # for all arquivos de saida...
             for lfile in glob.glob(f"wrfd{li_dom}*"):
-                # logger
-                M_LOG.debug("movendo: %s", lfile)
                 # move os arquivos gerados para o diretório de saída
                 shutil.move(lfile, os.path.join(ls_dir_out, os.path.basename(lfile)))
 
@@ -118,8 +117,6 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
 
     # for all wrfout files...
     for lfile in glob.glob("wrfout*"):
-        # logger
-        M_LOG.debug("removendo: %s", lfile)
         # remove file
         os.remove(lfile)
 
@@ -163,17 +160,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         M_LOG.info("Criando diretório de saída: %s", ls_dir_out)
         # cria diretório de saída
         os.makedirs(ls_dir_out)
-    '''
-    # diretório do GFS
-    ls_dir_gfs = l_wrf["dir_gfs"]
 
-    # diretório dos arquivos GFS existe ?
-    if not os.path.exists(ls_dir_gfs):
-        # logger
-        M_LOG.info("Criando diretório do GFS: %s", ls_dir_gfs)
-        # cria diretório do GFS
-        os.makedirs(ls_dir_gfs)
-    '''
     # logger
     M_LOG.info("Removendo arquivos temporários anteriores.")
 
@@ -182,8 +169,6 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
 
     # para todos os arquivos de trabalho do WRF...
     for lfile in glob.glob("met_*"):
-        # logger
-        M_LOG.debug("removendo: %s", lfile)
         # remove o arquivo
         os.remove(lfile)
 
@@ -194,8 +179,6 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
     for ls_tmp in ["GFS*", "geo_em*", "PFILE*", "FILE*", "GRIBFILE*"]:
         # for all files with extension...
         for lfile in glob.glob(ls_tmp):
-            # logger
-            M_LOG.debug("removendo: %s", lfile)
             # remove o arquivo
             os.remove(lfile)
 
@@ -284,15 +267,11 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
     for ls_tmp in ["GFS*", "geo_em*", "PFILE*", "FILE*", "GRIBFILE*"]:
         # for all files with extension...
         for lfile in glob.glob(ls_tmp):
-            # logger
-            M_LOG.debug("removendo: %s", lfile)
             # remove o arquivo
             os.remove(lfile)
 
     # for all log files...
     for lfile in glob.glob("*.log"):
-        # logger
-        M_LOG.debug("copiando: %s", lfile)
         # move os arquivos de log do WPS para o diretório de log
         shutil.copy(lfile, ls_dir_log)
 
@@ -345,8 +324,6 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
         M_LOG.error("Erro ao executar real.exe", exc_info=1)
         # for all rsl.error files...
         for lfile in glob.glob("rsl.error.*"):
-            # logger
-            M_LOG.debug("movendo: %s", lfile)
             # salva o log do erro
             shutil.move(lfile, os.path.join(ls_dir_log, lfile))
         # abort
@@ -373,8 +350,6 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
         M_LOG.error("Erro ao executar wrf.exe", exc_info=1)
         # for all rsl.error files...
         for lfile in glob.glob("rsl.error.*"):
-            # logger
-            M_LOG.debug("movendo: %s", lfile)
             # salva o log do erro
             shutil.move(lfile, os.path.join(ls_dir_log, lfile))
         # abort
@@ -385,15 +360,11 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
 
     # for all wrfout files...
     for lfile in glob.glob("wrfout_*"):
-        # logger
-        M_LOG.debug("movendo: %s", lfile)
         # move os arquivos de saída wrfout_* para o diretório do ARWPost
         shutil.move(lfile, os.path.join(l_wrf["dir_arw"], lfile))
 
     # for all met*.nc files...
     for lfile in glob.glob("met*.nc"):
-        # logger
-        M_LOG.debug("removendo: %s", lfile)
         # remove file
         os.remove(lfile)
 

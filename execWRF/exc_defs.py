@@ -2,9 +2,10 @@
 """
 exc_defs
 
+2022/apr  1.1  mlabru  change to dotenv
 2021/may  1.0  mlabru  initial version (Linux/Python)
 """
-# < imports >--------------------------------------------------------------------------------------
+# < imports >----------------------------------------------------------------------------------
 
 # python library
 import ast
@@ -22,11 +23,11 @@ load_dotenv()
 # NCAR login
 DDCT_VALUES = ast.literal_eval(os.getenv("DDCT_VALUES"))
 
-# < defines >--------------------------------------------------------------------------------------
+# < defines >----------------------------------------------------------------------------------
 
 # logging level
 DI_LOG_LEVEL = logging.DEBUG
-# DI_LOG_LEVEL = logging.WARNING
+# DI_LOG_LEVEL = logging.INFO
 
 # intervalo de previsão
 DI_INTERVALO = 6
@@ -34,4 +35,4 @@ DI_INTERVALO = 6
 # WFR home dir
 DS_WRF_HOME = os.path.expanduser("~/WRF")
 
-# < the end >--------------------------------------------------------------------------------------
+# < the end >----------------------------------------------------------------------------------
