@@ -2,6 +2,7 @@
 """
 exc_defs
 
+2022/apr  1.2  mlabru  change literal_eval to pass on github pytest
 2022/apr  1.1  mlabru  change to dotenv
 2021/may  1.0  mlabru  initial version (Linux/Python)
 """
@@ -21,7 +22,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # NCAR login
-DDCT_VALUES = ast.literal_eval(os.getenv("DDCT_VALUES"))
+DDCT_VALUES = os.getenv("DDCT_VALUES")
+
+if DDCT_VALUES:
+    # eval dict
+    DDCT_VALUES = ast.literal_eval(DDCT_VALUES)
 
 # < defines >----------------------------------------------------------------------------------
 
