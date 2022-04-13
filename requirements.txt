@@ -1,0 +1,3 @@
+graypy
+python-dotenv
+requests

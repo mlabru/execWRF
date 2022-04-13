@@ -11,8 +11,10 @@ exc_download
 import datetime
 import logging
 import os
-import requests
 import sys
+
+# requests
+import requests
 
 # graylog
 import graypy
