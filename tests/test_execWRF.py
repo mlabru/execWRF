@@ -1,5 +1,5 @@
-
 from execWRF import exc_download as dnl
+
 
 # content of test_sample.py
 def inc(x):
@@ -8,4 +8,3 @@ def inc(x):
 
 def test_answer():
     assert inc(3) == 4
-    

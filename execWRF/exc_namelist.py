@@ -2,7 +2,7 @@
 """
 exc_namelist
 
-2021/nov  1.0  eliana   initial version (Linux/Python)
+2021/nov  1.0  eliana  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ def cria_namelist_ARWPost(fs_namelist_file, f_config, f_data, fi_dom):
     assert l_date
 
     # cria o namelist
-    with open(fs_namelist_file, 'w') as lfh:
+    with open(fs_namelist_file, "w") as lfh:
         # gera o namelist
         lfh.write(f"&datetime\n")
         lfh.write(f"  start_date = '{l_date['ano_ini']}-{l_date['mes_ini']}-{l_date['dia_ini']}_{l_date['hora_ini']}:00:00'\n")
@@ -77,7 +77,7 @@ def cria_namelist_WPS(fs_namelist_file, f_config, f_data):
     assert l_date
 
     # cria o namelist
-    with open(fs_namelist_file, 'w') as lfh:
+    with open(fs_namelist_file, "w") as lfh:
         # gera o namelist
         lfh.write(f"&share\n")
         lfh.write(f"  wrf_core = 'ARW',\n")
@@ -138,7 +138,7 @@ def cria_namelist_WRF(fs_namelist_file, f_config, f_data):
     assert l_date
 
     # cria o namelist
-    with open(fs_namelist_file, 'w') as lfh:
+    with open(fs_namelist_file, "w") as lfh:
         # gera o namelist
         lfh.write(f"&time_control\n")
         lfh.write(f"  run_days = 0,\n")
@@ -259,4 +259,3 @@ def cria_namelist_WRF(fs_namelist_file, f_config, f_data):
         lfh.write(f"\n")
 
 # < the end >----------------------------------------------------------------------------------
-        

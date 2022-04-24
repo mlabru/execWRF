@@ -13,11 +13,11 @@ import logging
 import os
 import sys
 
-# requests
-import requests
-
 # graylog
 import graypy
+
+# requests
+import requests
 
 # local
 import exc_defs as df
@@ -51,7 +51,7 @@ def check_file_status(fs_filepath, fi_filesize):
     M_LOG.debug("check_file_status >>")
 
     # new line
-    sys.stdout.write('\r')
+    sys.stdout.write("\r")
     sys.stdout.flush()
 
     # tamanho do arquivo
@@ -60,6 +60,7 @@ def check_file_status(fs_filepath, fi_filesize):
     # show completed percentual
     sys.stdout.write("{0:.3f}% Completed".format((li_size / fi_filesize) * 100))
     sys.stdout.flush()
+
 
 # ---------------------------------------------------------------------------------------------
 def _download_file(fs_file, f_cookies):
@@ -83,12 +84,12 @@ def _download_file(fs_file, f_cookies):
 
     # retries counter
     li_retry = 5
-    
+
     while li_retry > 0:
         # request file
-        lo_resp = requests.get(ls_file_url, cookies=f_cookies,
-                                            allow_redirects=True,
-                                            stream=True)
+        lo_resp = requests.get(
+            ls_file_url, cookies=f_cookies, allow_redirects=True, stream=True
+        )
 
         if 200 == lo_resp.status_code:
             # tamanho do arquivo
@@ -96,15 +97,15 @@ def _download_file(fs_file, f_cookies):
 
             # abre o arquivo
             with open(ls_file_name, "wb") as lfh:
-                # for all chunks in file... 
+                # for all chunks in file...
                 for lchunk in lo_resp.iter_content(chunk_size=DI_CHUNK_SIZE):
                     # grava o chunk no arquivo
                     lfh.write(lchunk)
 
                     # ainfa não terminou ?
                     # if DI_CHUNK_SIZE < li_filesize:
-                        # exibe o status atual
-                        # check_file_status(ls_file_name, li_filesize)
+                    # exibe o status atual
+                    # check_file_status(ls_file_name, li_filesize)
 
             # ok, quit
             break
@@ -120,7 +121,8 @@ def _download_file(fs_file, f_cookies):
         M_LOG.critical("Número máximo de tentativas de download. Aborting.", exc_info=1)
         # abort
         sys.exit(-1)
-        
+
+
 # ---------------------------------------------------------------------------------------------
 def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     """
@@ -136,7 +138,7 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     # logger
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))
 
-    # data início    
+    # data início
     ls_data_ini = fo_forecast_date["data"]["data_ini"]
 
     # strip data início
@@ -177,7 +179,7 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
 
         # arquivo para download
         ls_file = f"grib2/{ls_ano}/{ls_ano}.{ls_mes}/fnl_{ls_data_ini}_{ls_hora}_00.grib2"
- 
+
         # arquivo não existe ?
         if not os.path.exists(os.path.basename(ls_file)):
             # faz o download do arquivo
@@ -201,20 +203,21 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
             ls_ano = ls_data_ini[0:4]
             ls_mes = ls_data_ini[4:6]
 
+
 # ---------------------------------------------------------------------------------------------
 # this is the bootstrap process
-    
+
 if "__main__" == __name__:
     # logger
     logging.basicConfig(level=df.DI_LOG_LEVEL)
-    
+
     # disable logging
     # logging.disable(sys.maxint)
 
     # sample
-    ldct_date = {"data_ini":"20211112", "hora_ini":"12"}
-    
+    ldct_date = {"data_ini": "20211112", "hora_ini": "12"}
+
     # run application
     download_FNL(ldct_date, 48)
-    
+
 # < the end >----------------------------------------------------------------------------------

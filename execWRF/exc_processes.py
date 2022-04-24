@@ -91,10 +91,11 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
         M_LOG.info("Execução do ARWpost.exe para o domínio %d", li_dom)
         try:
             # executa ARWpost.exe
-            ls_res = subprocess.check_output("./ARWpost.exe", shell=True).decode(sys.stdout.encoding)
+            ls_res = subprocess.check_output("./ARWpost.exe", shell=True).decode(
+                sys.stdout.encoding)
 
             # create output file
-            with open(os.path.join(ls_dir_log, f"arwpostD{li_dom}.out"), 'w') as lfh:
+            with open(os.path.join(ls_dir_log, f"arwpostD{li_dom}.out"), "w") as lfh:
                 # save output
                 lfh.writelines(ls_res)
 
@@ -104,7 +105,7 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
                 shutil.move(lfile, os.path.join(ls_dir_out, os.path.basename(lfile)))
 
             # create file with output directory
-            with open(os.path.join("/tmp", fs_token), 'w') as lfh:
+            with open(os.path.join("/tmp", fs_token), "w") as lfh:
                 # save output
                 lfh.writelines(ls_dir_out)
 
@@ -195,7 +196,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./geogrid.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "geogrid.out"), 'w') as lfh:
+        with open(os.path.join(ls_dir_log, "geogrid.out"), "w") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -231,7 +232,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "ungrib.out"), 'w') as lfh:
+        with open(os.path.join(ls_dir_log, "ungrib.out"), "w") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -249,7 +250,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "metgrid.out"), 'w') as lfh:
+        with open(os.path.join(ls_dir_log, "metgrid.out"), "w") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -314,7 +315,7 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "real.out"), 'w') as lfh:
+        with open(os.path.join(ls_dir_log, "real.out"), "w") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -340,7 +341,7 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "wrf.out"), 'w') as lfh:
+        with open(os.path.join(ls_dir_log, "wrf.out"), "w") as lfh:
             # save output
             lfh.writelines(ls_res)
 

@@ -55,13 +55,13 @@ def adjust_config(fo_cfg_parser, fs_cfg_pathname, fi_forecast_time, fs_token):
     :param fs_token (str): forecast id
     """
     # logger
-    M_LOG.debug("adjust_config >>")
+    M_LOG.info(">> adjust_config")
 
     # calcula o valor de l_n_dx
-    fo_cfg_parser["CONFIG"]["l_n_dx"] = fo_cfg_parser["CONFIG"]["p_dx"].replace(',', '')
+    fo_cfg_parser["CONFIG"]["l_n_dx"] = fo_cfg_parser["CONFIG"]["p_dx"].replace(",", "")
 
     # recria o arquivo de configuração
-    with open(fs_cfg_pathname, 'w') as lfh:
+    with open(fs_cfg_pathname, "w") as lfh:
         # grava no arquivo de configuração
         fo_cfg_parser.write(lfh)
 
@@ -96,7 +96,7 @@ def arg_parse():
     :returns: arguments
     """
     # logger
-    M_LOG.debug("arg_parse >>")
+    M_LOG.info(">> arg_parse")
 
     # less than 7 parameters ?
     if len(sys.argv) < 7:
@@ -104,42 +104,76 @@ def arg_parse():
         print_usage(f"Número de argumentos inválido: {len(sys.argv)} de 7.")
 
     # ano para previsão
-    li_ano_ini = int(sys.argv[1]) if sys.argv[1].isdigit() \
-                                  else print_usage(f"Erro no ano: {sys.argv[1]}")
+    li_ano_ini = (
+        int(sys.argv[1])
+        if sys.argv[1].isdigit()
+        else print_usage(f"Erro no ano: {sys.argv[1]}")
+    )
 
     # mes para previsão
-    li_mes_ini = int(sys.argv[2]) if sys.argv[2].isdigit() \
-                                  else print_usage(f"Erro no mês: {sys.argv[2]}")
-    li_mes_ini = li_mes_ini if 1 <= li_mes_ini <= 12 \
-                            else print_usage(f"Erro: mês ({li_mes_ini}) inválido.")
+    li_mes_ini = (
+        int(sys.argv[2])
+        if sys.argv[2].isdigit()
+        else print_usage(f"Erro no mês: {sys.argv[2]}")
+    )
+    li_mes_ini = (
+        li_mes_ini
+        if 1 <= li_mes_ini <= 12
+        else print_usage(f"Erro: mês ({li_mes_ini}) inválido.")
+    )
 
     # dia para previsão
-    li_dia_ini = int(sys.argv[3]) if sys.argv[3].isdigit() \
-                                  else print_usage(f"Erro no dia: {sys.argv[3]}")
-    li_dia_ini = li_dia_ini if 1 <= li_dia_ini <= 31 \
-                            else print_usage(f"Erro: dia ({li_dia_ini}) inválido.")
+    li_dia_ini = (
+        int(sys.argv[3])
+        if sys.argv[3].isdigit()
+        else print_usage(f"Erro no dia: {sys.argv[3]}")
+    )
+    li_dia_ini = (
+        li_dia_ini
+        if 1 <= li_dia_ini <= 31
+        else print_usage(f"Erro: dia ({li_dia_ini}) inválido.")
+    )
 
     # início para previsão
-    li_hora_ini = int(sys.argv[4]) if sys.argv[4].isdigit() \
-                                   else print_usage(f"Erro na hora: {sys.argv[4]}")
-    li_hora_ini = li_hora_ini if li_hora_ini in DLST_HORA_OK \
-                              else print_usage(f"Erro: hora ({li_hora_ini}) inválida.")
+    li_hora_ini = (
+        int(sys.argv[4])
+        if sys.argv[4].isdigit()
+        else print_usage(f"Erro na hora: {sys.argv[4]}")
+    )
+    li_hora_ini = (
+        li_hora_ini
+        if li_hora_ini in DLST_HORA_OK
+        else print_usage(f"Erro: hora ({li_hora_ini}) inválida.")
+    )
 
     # tempo de previsão
-    li_forecast_time = int(sys.argv[5]) if sys.argv[5].isdigit() \
-                                        else print_usage(f"Erro no tempo: {sys.argv[5]}")
-    li_forecast_time = li_forecast_time if li_forecast_time in DLST_TEMPO_OK \
-                                        else print_usage(f"Erro: tempo ({li_forecast_time}) inválida.")
+    li_forecast_time = (
+        int(sys.argv[5])
+        if sys.argv[5].isdigit()
+        else print_usage(f"Erro no tempo: {sys.argv[5]}")
+    )
+    li_forecast_time = (
+        li_forecast_time
+        if li_forecast_time in DLST_TEMPO_OK
+        else print_usage(f"Erro: tempo ({li_forecast_time}) inválida.")
+    )
 
     # região de previsão
-    ls_regiao = str(sys.argv[6]).strip().upper() if sys.argv[6].isalpha() \
-                                                 else print_usage(f"Erro na região: {sys.argv[6]}")
-    ls_regiao = ls_regiao if ls_regiao in DLST_REGIAO_OK \
-                          else print_usage(f"Erro: região ({ls_regiao}) inválida.")
+    ls_regiao = (
+        str(sys.argv[6]).strip().upper()
+        if sys.argv[6].isalpha()
+        else print_usage(f"Erro na região: {sys.argv[6]}")
+    )
+    ls_regiao = (
+        ls_regiao
+        if ls_regiao in DLST_REGIAO_OK
+        else print_usage(f"Erro: região ({ls_regiao}) inválida.")
+    )
 
     # calcula a data final = data inicial + horas de previsão:
-    ldt_final = datetime.datetime(li_ano_ini, li_mes_ini, li_dia_ini, li_hora_ini, 0, 0) + \
-                datetime.timedelta(hours=li_forecast_time)
+    ldt_final = datetime.datetime(
+        li_ano_ini, li_mes_ini, li_dia_ini, li_hora_ini, 0, 0
+    ) + datetime.timedelta(hours=li_forecast_time)
 
     # cria configuração de data e hora
     lo_forecast_date = configparser.ConfigParser()
@@ -162,7 +196,7 @@ def arg_parse():
     ldct_date["hora_final"] = "{:02d}".format(ldt_final.hour)
 
     # cria arquivo de configuração de data e hora
-    with open(os.path.join(df.DS_WRF_HOME, "data.conf"), 'w') as lfh:
+    with open(os.path.join(df.DS_WRF_HOME, "data.conf"), "w") as lfh:
         # grava todas as informações de data e hora em arquivo
         lo_forecast_date.write(lfh)
 
@@ -179,12 +213,12 @@ def build_token(fo_forecast_date, fi_forecast_time, fs_regiao):
     :param fs_regiao (str): região
     """
     # logger
-    M_LOG.debug("build_token >>")
+    M_LOG.info(">> build_token")
 
     # parser das variáveis de configuração
     ldt_ini = fo_forecast_date["data"]["data_ini"]
 
-    # hora de início da previsão 
+    # hora de início da previsão
     li_hora_ini = int(fo_forecast_date["data"]["hora_ini"])
 
     # return token
@@ -201,13 +235,13 @@ def forecast_exists(fo_cfg_parser, fs_token):
     :returns: True if exists or False
     """
     # logger
-    M_LOG.debug("forecast_exists >>")
+    M_LOG.info(">> forecast_exists")
 
     # WRF section
     l_wrf = fo_cfg_parser["WRF"]
     assert l_wrf
 
-    # outrput dir 
+    # outrput dir
     ls_tgz_file = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], fs_token)
     # tgz output file
     ls_tgz_file += ".tgz"
@@ -225,7 +259,7 @@ def load_config(fs_regiao):
     :returns: config parser & config fullpath
     """
     # logger
-    M_LOG.debug("load_config >>")
+    M_LOG.info(">> load_config")
 
     # diretório base (PATH) de execução (onde estão os arquivos de configuração)
     ls_path = df.DS_WRF_HOME if df.DS_WRF_HOME else os.path.dirname(os.path.realpath(__file__))
@@ -262,7 +296,7 @@ def make_tgz_file(fo_cfg_parser, fs_token):
     :param fs_token (str): token id
     """
     # logger
-    M_LOG.debug("make_tgz_file >>")
+    M_LOG.info(">> make_tgz_file")
 
     # source directory (/home/webpca/WRF/data/out/<token>)
     ls_source_dir = fo_cfg_parser["WRF"]["dir_out"]
@@ -272,7 +306,7 @@ def make_tgz_file(fo_cfg_parser, fs_token):
 
     # create tgz file
     with tarfile.open(ls_tgz_filepath, "w:gz") as lfh:
-        # add directory to tgz 
+        # add directory to tgz
         lfh.add(ls_source_dir, arcname=os.path.basename(ls_source_dir))
 
 # ---------------------------------------------------------------------------------------------
@@ -283,7 +317,7 @@ def print_usage(fs_msg):
     :param fs_msg (str): error message
     """
     # logger
-    M_LOG.debug("print_usage >>")
+    M_LOG.info(">> print_usage")
 
     # error message ?
     if fs_msg:
@@ -314,7 +348,7 @@ def touch_tgz_file(fo_cfg_parser, fs_token):
     :param fs_token (str): token id
     """
     # logger
-    M_LOG.debug("touch_tgz_file >>")
+    M_LOG.info(">> touch_tgz_file")
 
     # WRF section
     l_wrf = fo_cfg_parser["WRF"]
@@ -329,13 +363,14 @@ def touch_tgz_file(fo_cfg_parser, fs_token):
     # touch file
     pathlib.Path(ls_tgz_filepath).touch()
 
+
 # ---------------------------------------------------------------------------------------------
 def main():
     """
     drive app
     """
     # logger
-    M_LOG.debug("main >>")
+    M_LOG.info(">> main")
 
     # logger
     M_LOG.info("Início de execução !")
@@ -380,14 +415,16 @@ def main():
 
 if "__main__" == __name__:
     # logger
-    logging.basicConfig(filename="logs/execWRF.log",
-                        filemode='w',
-                        datefmt="%d/%m/%Y %H:%M",
-                        format="%(asctime)s %(message)s",
-                        level=df.DI_LOG_LEVEL)
+    logging.basicConfig(
+        filename="logs/execWRF.log",
+        filemode="w",
+        datefmt="%d/%m/%Y %H:%M",
+        format="%(asctime)s %(message)s",
+        level=df.DI_LOG_LEVEL,
+    )
 
     # disable logging
-    # logging.disable(sys.maxint)
+    # logging.disable(sys.maxsize)
 
     # run application
     main()
