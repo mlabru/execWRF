@@ -2,8 +2,8 @@
 """
 exc_processes
 
-2022/apr  1.1  mlabru  graylog log management
-2021/nov  1.0  eliana  initial version (Linux/Python)
+2022.apr  mlabru  graylog log management
+2021.nov  eliana  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
 

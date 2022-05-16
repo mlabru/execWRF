@@ -2,9 +2,9 @@
 """
 exc_defs
 
-2022/apr  1.2  mlabru  change literal_eval to pass on github pytest
-2022/apr  1.1  mlabru  change to dotenv
-2021/may  1.0  mlabru  initial version (Linux/Python)
+2022.apr  mlabru  change literal_eval to pass on github pytest
+2022.apr  mlabru  change to dotenv
+2021.may  mlabru  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
 
@@ -14,12 +14,12 @@ import logging
 import os
 
 # .env
-from dotenv import load_dotenv
+import dotenv
 
 # < environment >------------------------------------------------------------------------------
 
 # take environment variables from .env
-load_dotenv()
+dotenv.load_dotenv()
 
 # NCAR login
 DDCT_VALUES = os.getenv("DDCT_VALUES")
@@ -32,7 +32,7 @@ if DDCT_VALUES:
 
 # logging level
 DI_LOG_LEVEL = logging.DEBUG
-# DI_LOG_LEVEL = logging.INFO
+# DI_LOG_LEVEL = logging.WARNING
 
 # intervalo de previsão
 DI_INTERVALO = 6

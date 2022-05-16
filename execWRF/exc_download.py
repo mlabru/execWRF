@@ -2,8 +2,8 @@
 """
 exc_download
 
-2022/apr  1.1  mlabru  graylog log management
-2021/nov  1.0  eliana  initial version (Linux/Python)
+2022.apr  mlabru  graylog log management
+2021.nov  eliana  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ def check_file_status(fs_filepath, fi_filesize):
     check file status
     """
     # logger
-    M_LOG.debug("check_file_status >>")
+    M_LOG.info(">> check_file_status")
 
     # new line
     sys.stdout.write("\r")
@@ -70,7 +70,7 @@ def _download_file(fs_file, f_cookies):
     :param f_cookies (): cookies
     """
     # logger
-    M_LOG.debug("_download_file >>")
+    M_LOG.info(">> _download_file")
 
     # build file URL
     ls_file_url = os.path.join(DS_PATH, fs_file)
@@ -87,8 +87,7 @@ def _download_file(fs_file, f_cookies):
     while li_retry > 0:
         # request file
         lo_resp = requests.get(
-            ls_file_url, cookies=f_cookies, allow_redirects=True, stream=True
-        )
+            ls_file_url, cookies=f_cookies, allow_redirects=True, stream=True)
 
         if 200 == lo_resp.status_code:
             # tamanho do arquivo
@@ -131,7 +130,7 @@ def download_fnl(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     :param fs_fnl_dir (str): diretório de dados
     """
     # logger
-    M_LOG.debug("download_fnl >>")
+    M_LOG.info(">> download_fnl")
 
     # logger
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))

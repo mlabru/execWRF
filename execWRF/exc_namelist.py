@@ -2,7 +2,7 @@
 """
 exc_namelist
 
-2021/nov  1.0  eliana  initial version (Linux/Python)
+2021.nov  eliana  initial version (Linux/Python)
 """
 # < imports >----------------------------------------------------------------------------------
 
