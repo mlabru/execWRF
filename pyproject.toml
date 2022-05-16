@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "cleo"
-version = "0.3.0"
-description = "Cleo"
+name = "execWRF"
+version = "0.2.0"
+description = "execWRF"
 authors = ["Milton Abrunhosa <ml_byteman@yahoo.com.br>"]
 license = "MIT"
 

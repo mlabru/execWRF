@@ -24,8 +24,19 @@ PARMS=${CMDLIN[@]:0:$CLLEN-1}
 # token (parameters sem espaços)
 TOKEN="$(echo -e "${PARMS}" | tr -d '[:space:]')"
 
-# home dir do execWRF
-cd ~/clsim/execWRF
+# CLSim directory
+CLSIM=~/clsim
 
-# executa a aplicação
-python3 execWRF/exec_wrf.py $@ > logs/execWRF.$TOKEN.log 2>&1
+# home directory exists ?
+if [ -d ${CLSIM} ]; then
+    # set home dir
+    cd ${CLSIM}
+fi
+
+# set PYTHONPATH
+export PYTHONPATH="$PWD/."
+
+# log warning
+echo "[`date`]: starting process execWRF..."
+# executa a aplicação (-OO)
+python3 execWRF/exec_wrf.py $@ > logs/execWRF.$HOST.$TDATE.$TOKEN.log 2>&1

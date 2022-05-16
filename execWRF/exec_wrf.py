@@ -154,7 +154,7 @@ def arg_parse():
     # região de previsão
     ls_regiao = (
         str(sys.argv[6]).strip().upper()
-        if sys.argv[6].isalpha()
+        if sys.argv[6].isalnum()
         else print_usage(f"Erro na região: {sys.argv[6]}")
     )
     ls_regiao = (

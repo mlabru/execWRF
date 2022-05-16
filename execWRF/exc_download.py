@@ -172,7 +172,7 @@ def download_fnl(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     # enquanto durar...
     while li_tempo_decorrido <= fi_forecast_time:
         # hora atual (str)
-        ls_hora = "{li_hora_atu:0>2d}"
+        ls_hora = f"{li_hora_atu:0>2d}"
 
         # arquivo para download
         ls_file = f"grib2/{ls_ano}/{ls_ano}.{ls_mes}/fnl_{ls_data_ini}_{ls_hora}_00.grib2"
