@@ -3,7 +3,7 @@ name = "cleo"
 version = "0.3.0"
 description = "Cleo"
 authors = ["Milton Abrunhosa <ml_byteman@yahoo.com.br>"]
-license = "LGPL2"
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -15,6 +15,14 @@ requests = "^2.27.1"
 pytest = "^7.1.1"
 isort = "^5.10.1"
 black = "^22.3.0"
+mypy = "^0.942"
+MonkeyType = "^22.2.0"
+types-requests = "^2.27.20"
+pytest-cov = "^3.0.0"
+flake8 = "^4.0.1"
+pylint = "^2.13.9"
+pip-audit = "^2.2.1"
+safety = "^1.10.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

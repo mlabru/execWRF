@@ -1,0 +1,6 @@
+from configparser import ConfigParser
+from requests.cookies import RequestsCookieJar
+
+def _download_file(fs_file: str, f_cookies: RequestsCookieJar) -> None: ...
+
+def download_FNL(fo_forecast_date: ConfigParser, fi_forecast_time: int, fs_fnl_dir: str) -> None: ...

@@ -20,8 +20,8 @@ import sys
 import graypy
 
 # local
-import exc_defs as df
-import exc_namelist as mnl
+import execWRF.exc_defs as df
+import execWRF.exc_namelist as mnl
 
 # < logging >----------------------------------------------------------------------------------
 
@@ -39,17 +39,17 @@ def process_all(fo_cfg_parser, fo_forecast_date, fs_token):
     process all stages
     """
     # logger
-    M_LOG.debug("process_all >>")
+    M_LOG.info(">> process_all")
 
     # process WPS
-    process_WPS(fo_cfg_parser, fo_forecast_date)
+    process_wps(fo_cfg_parser, fo_forecast_date)
     # process WRF
-    process_WRF(fo_cfg_parser, fo_forecast_date)
+    process_wrf(fo_cfg_parser, fo_forecast_date)
     # process ARWPost
-    process_ARW(fo_cfg_parser, fo_forecast_date, fs_token)
+    process_arw(fo_cfg_parser, fo_forecast_date, fs_token)
 
 # ---------------------------------------------------------------------------------------------
-def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
+def process_arw(fo_cfg_parser, fo_forecast_date, fs_token):
     """
     processa ARWpost:
     - cria namelist.ARWpost
@@ -60,7 +60,7 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
     :param fs_token (str): forecast id
     """
     # logger
-    M_LOG.debug("process_ARW >>")
+    M_LOG.info(">> process_arw")
 
     # logger
     M_LOG.info("Início do ARWpost: %s.", str(datetime.datetime.now()))
@@ -85,7 +85,7 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
         M_LOG.info("Criando namelist ARWpost: namelist.ARWpost D0%d", li_dom)
 
         # cria namelist.ARWpost
-        mnl.cria_namelist_ARWPost("namelist.ARWpost", fo_cfg_parser, fo_forecast_date, li_dom)
+        mnl.cria_namelist_arwpost("namelist.ARWpost", fo_cfg_parser, fo_forecast_date, li_dom)
 
         # logger
         M_LOG.info("Execução do ARWpost.exe para o domínio %d", li_dom)
@@ -95,7 +95,7 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
                 sys.stdout.encoding)
 
             # create output file
-            with open(os.path.join(ls_dir_log, f"arwpostD{li_dom}.out"), "w") as lfh:
+            with open(os.path.join(ls_dir_log, f"arwpostD{li_dom}.out"), "w", encoding="utf-8") as lfh:
                 # save output
                 lfh.writelines(ls_res)
 
@@ -105,7 +105,7 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
                 shutil.move(lfile, os.path.join(ls_dir_out, os.path.basename(lfile)))
 
             # create file with output directory
-            with open(os.path.join("/tmp", fs_token), "w") as lfh:
+            with open(os.path.join("/tmp", fs_token), "w", encoding="utf-8") as lfh:
                 # save output
                 lfh.writelines(ls_dir_out)
 
@@ -122,7 +122,7 @@ def process_ARW(fo_cfg_parser, fo_forecast_date, fs_token):
         os.remove(lfile)
 
 # ---------------------------------------------------------------------------------------------
-def process_WPS(fo_cfg_parser, fo_forecast_date):
+def process_wps(fo_cfg_parser, fo_forecast_date):
     """
     processa WPS:
     - cria o arquivo namelist.wps
@@ -133,7 +133,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
     :param fo_forecast_date (ConfigParser): dados da data de previsão
     """
     # logger
-    M_LOG.debug("process_WPS >>")
+    M_LOG.info(">> process_wps")
 
     # logger
     M_LOG.info("Início do WPS: %s.", str(datetime.datetime.now()))
@@ -187,7 +187,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
     M_LOG.info("Criando namelist WPS: namelist.wps")
 
     # cria namelist.wps
-    mnl.cria_namelist_WPS("namelist.wps", fo_cfg_parser, fo_forecast_date)
+    mnl.cria_namelist_wps("namelist.wps", fo_cfg_parser, fo_forecast_date)
 
     # logger
     M_LOG.info("Execução do geogrid.exe")
@@ -196,7 +196,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./geogrid.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "geogrid.out"), "w") as lfh:
+        with open(os.path.join(ls_dir_log, "geogrid.out"), "w", encoding="utf-8") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -208,7 +208,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         sys.exit(-1)
 
     # data de início da previsão
-    ldt_ini = fo_forecast_date["data"]["data_ini"]
+    # ldt_ini = fo_forecast_date["data"]["data_ini"]
 
     # logger
     M_LOG.info("Criando links dos arquivos FNL")
@@ -232,7 +232,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./ungrib.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "ungrib.out"), "w") as lfh:
+        with open(os.path.join(ls_dir_log, "ungrib.out"), "w", encoding="utf-8") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -250,7 +250,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./metgrid.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "metgrid.out"), "w") as lfh:
+        with open(os.path.join(ls_dir_log, "metgrid.out"), "w", encoding="utf-8") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -277,7 +277,7 @@ def process_WPS(fo_cfg_parser, fo_forecast_date):
         shutil.copy(lfile, ls_dir_log)
 
 # ---------------------------------------------------------------------------------------------
-def process_WRF(fo_cfg_parser, fo_forecast_date):
+def process_wrf(fo_cfg_parser, fo_forecast_date):
     """
     processa WRF:
     - real.exe => wrf.exe => move wrfout_* para diretorio ARWPost
@@ -287,7 +287,7 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
     :param fo_forecast_date (ConfigParser): dados da data de previsão
     """
     # logger
-    M_LOG.debug("process_WRF >>")
+    M_LOG.info(">> process_wrf")
 
     # logger
     M_LOG.info("Início do WRF: %s.", str(datetime.datetime.now()))
@@ -306,7 +306,7 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
     M_LOG.info("Criando namelist WRF: namelist.input")
 
     # cria namelist.input
-    mnl.cria_namelist_WRF("namelist.input", fo_cfg_parser, fo_forecast_date)
+    mnl.cria_namelist_wrf("namelist.input", fo_cfg_parser, fo_forecast_date)
 
     # logger
     M_LOG.info("Execução do real.exe")
@@ -315,7 +315,7 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output("./real.exe", shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "real.out"), "w") as lfh:
+        with open(os.path.join(ls_dir_log, "real.out"), "w", encoding="utf-8") as lfh:
             # save output
             lfh.writelines(ls_res)
 
@@ -341,7 +341,7 @@ def process_WRF(fo_cfg_parser, fo_forecast_date):
         ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
 
         # create output file
-        with open(os.path.join(ls_dir_log, "wrf.out"), "w") as lfh:
+        with open(os.path.join(ls_dir_log, "wrf.out"), "w", encoding="utf-8") as lfh:
             # save output
             lfh.writelines(ls_res)
 

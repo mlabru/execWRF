@@ -21,9 +21,9 @@ import tarfile
 import graypy
 
 # local
-import exc_defs as df
-import exc_download as dwn
-import exc_processes as prc
+import execWRF.exc_defs as df
+import execWRF.exc_download as dwn
+import execWRF.exc_processes as prc
 
 # < defines >----------------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ def adjust_config(fo_cfg_parser, fs_cfg_pathname, fi_forecast_time, fs_token):
     fo_cfg_parser["CONFIG"]["l_n_dx"] = fo_cfg_parser["CONFIG"]["p_dx"].replace(",", "")
 
     # recria o arquivo de configuração
-    with open(fs_cfg_pathname, "w") as lfh:
+    with open(fs_cfg_pathname, "w", encoding="utf-8") as lfh:
         # grava no arquivo de configuração
         fo_cfg_parser.write(lfh)
 
@@ -92,6 +92,7 @@ def adjust_config(fo_cfg_parser, fs_cfg_pathname, fi_forecast_time, fs_token):
 def arg_parse():
     """
     parser dos parâmetros de entrada
+    ex: <AAAA> <MM> <DD> <INÍCIO> <TEMPO> <REGIÃO> [E-MAIL]
 
     :returns: arguments
     """
@@ -110,7 +111,7 @@ def arg_parse():
         else print_usage(f"Erro no ano: {sys.argv[1]}")
     )
 
-    # mes para previsão
+    # mês para previsão
     li_mes_ini = (
         int(sys.argv[2])
         if sys.argv[2].isdigit()
@@ -184,19 +185,19 @@ def arg_parse():
 
     # forecast date section
     ldct_date = lo_forecast_date["data"]
-    ldct_date["data_ini"] = "{:4d}{:02d}{:02d}".format(li_ano_ini, li_mes_ini, li_dia_ini)
-    ldct_date["ano_ini"] = "{:4d}".format(li_ano_ini)
-    ldct_date["mes_ini"] = "{:02d}".format(li_mes_ini)
-    ldct_date["dia_ini"] = "{:02d}".format(li_dia_ini)
-    ldct_date["hora_ini"] = "{:02d}".format(li_hora_ini)
-    ldct_date["data_final"] = "{}".format(datetime.datetime.strftime(ldt_final, "%Y%m%d"))
-    ldct_date["ano_final"] = "{:4d}".format(ldt_final.year)
-    ldct_date["mes_final"] = "{:02d}".format(ldt_final.month)
-    ldct_date["dia_final"] = "{:02d}".format(ldt_final.day)
-    ldct_date["hora_final"] = "{:02d}".format(ldt_final.hour)
+    ldct_date["data_ini"] = f"{li_ano_ini:4d}{li_mes_ini:02d}{li_dia_ini:02d}"
+    ldct_date["ano_ini"] = f"{li_ano_ini:4d}"
+    ldct_date["mes_ini"] = f"{li_mes_ini:02d}"
+    ldct_date["dia_ini"] = f"{li_dia_ini:02d}"
+    ldct_date["hora_ini"] = f"{li_hora_ini:02d}"
+    ldct_date["data_final"] = datetime.datetime.strftime(ldt_final, "%Y%m%d")
+    ldct_date["ano_final"] = f"{ldt_final.year:4d}"
+    ldct_date["mes_final"] = f"{ldt_final.month:02d}"
+    ldct_date["dia_final"] = f"{ldt_final.day:02d}"
+    ldct_date["hora_final"] = f"{ldt_final.hour:02d}"
 
     # cria arquivo de configuração de data e hora
-    with open(os.path.join(df.DS_WRF_HOME, "data.conf"), "w") as lfh:
+    with open(os.path.join(df.DS_WRF_HOME, "data.conf"), "w", encoding="utf-8") as lfh:
         # grava todas as informações de data e hora em arquivo
         lo_forecast_date.write(lfh)
 
@@ -222,7 +223,7 @@ def build_token(fo_forecast_date, fi_forecast_time, fs_regiao):
     li_hora_ini = int(fo_forecast_date["data"]["hora_ini"])
 
     # return token
-    return "{}{:02d}{:02d}{}".format(ldt_ini, li_hora_ini, fi_forecast_time, fs_regiao)
+    return f"{ldt_ini}{li_hora_ini:02d}{fi_forecast_time:02d}{fs_regiao}"
 
 # ---------------------------------------------------------------------------------------------
 def forecast_exists(fo_cfg_parser, fs_token):
@@ -288,7 +289,7 @@ def load_config(fs_regiao):
     return lo_cfg_parser, ls_cfg_fullpath
 
 # ---------------------------------------------------------------------------------------------
-def make_tgz_file(fo_cfg_parser, fs_token):
+def make_tgz_file(fo_cfg_parser):  # , fs_token):
     """
     create a tgz file
 
@@ -301,11 +302,8 @@ def make_tgz_file(fo_cfg_parser, fs_token):
     # source directory (/home/webpca/WRF/data/out/<token>)
     ls_source_dir = fo_cfg_parser["WRF"]["dir_out"]
 
-    # output filepath (/home/webpca/WRF/data/out/<token>.tgz)
-    ls_tgz_filepath = ls_source_dir + ".tgz"
-
     # create tgz file
-    with tarfile.open(ls_tgz_filepath, "w:gz") as lfh:
+    with tarfile.open(ls_source_dir + ".tgz", "w:gz") as lfh:
         # add directory to tgz
         lfh.add(ls_source_dir, arcname=os.path.basename(ls_source_dir))
 
@@ -331,9 +329,9 @@ def print_usage(fs_msg):
     print("    MM     = Mês (01..12)")
     print("    DD     = Dia (01..31)")
     print("    HH     = Hora (00..23)")
-    print("    INÍCIO = Hora de início da previsão ({})".format(DLST_HORA_OK))
-    print("    TEMPO  = Tempo de previsão ({})".format(DLST_TEMPO_OK))
-    print("    REGIÃO = Região ({})".format(DLST_REGIAO_OK))
+    print(f"    INÍCIO = Hora de início da previsão ({DLST_HORA_OK})")
+    print(f"    TEMPO  = Tempo de previsão ({DLST_TEMPO_OK})")
+    print(f"    REGIÃO = Região ({DLST_REGIAO_OK})")
     print("    E-MAIL = E-mail para resposta (opcional)")
 
     # abort
@@ -357,12 +355,8 @@ def touch_tgz_file(fo_cfg_parser, fs_token):
     # source directory (/home/webpca/WRF/data/out + fs_token)
     ls_source_dir = os.path.join(l_wrf["dir_wrf"], l_wrf["dir_out"], fs_token)
 
-    # output filepath (/home/webpca/WRF/data/out/<token>.tgz)
-    ls_tgz_filepath = ls_source_dir + ".tgz"
-
-    # touch file
-    pathlib.Path(ls_tgz_filepath).touch()
-
+    # touch output filepath (/home/webpca/WRF/data/out/<token>.tgz)
+    pathlib.Path(ls_source_dir + ".tgz").touch()
 
 # ---------------------------------------------------------------------------------------------
 def main():
@@ -391,13 +385,13 @@ def main():
         adjust_config(lo_cfg_parser, ls_cfg_fullpath, li_forecast_time, ls_token)
 
         # download dos arquivos FNL
-        dwn.download_FNL(lo_forecast_date, li_forecast_time, lo_cfg_parser["WRF"]["dir_fnl"])
+        dwn.download_fnl(lo_forecast_date, li_forecast_time, lo_cfg_parser["WRF"]["dir_fnl"])
 
         # process WRF
         prc.process_all(lo_cfg_parser, lo_forecast_date, ls_token)
 
         # make tgz file
-        make_tgz_file(lo_cfg_parser, ls_token)
+        make_tgz_file(lo_cfg_parser)  # , ls_token)
 
         # remove output directory tree
         shutil.rmtree(lo_cfg_parser["WRF"]["dir_out"])

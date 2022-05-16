@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
 exc_download
 
 2022/apr  1.1  mlabru  graylog log management
@@ -20,7 +20,7 @@ import graypy
 import requests
 
 # local
-import exc_defs as df
+import execWRF.exc_defs as df
 
 # < defines >----------------------------------------------------------------------------------
 
@@ -58,9 +58,8 @@ def check_file_status(fs_filepath, fi_filesize):
     li_size = int(os.stat(fs_filepath).st_size)
 
     # show completed percentual
-    sys.stdout.write("{0:.3f}% Completed".format((li_size / fi_filesize) * 100))
+    sys.stdout.write(f"{(li_size / fi_filesize) * 100:.3f}% Completed")
     sys.stdout.flush()
-
 
 # ---------------------------------------------------------------------------------------------
 def _download_file(fs_file, f_cookies):
@@ -93,7 +92,7 @@ def _download_file(fs_file, f_cookies):
 
         if 200 == lo_resp.status_code:
             # tamanho do arquivo
-            li_filesize = int(lo_resp.headers["content-length"])
+            # li_filesize = int(lo_resp.headers["content-length"])
 
             # abre o arquivo
             with open(ls_file_name, "wb") as lfh:
@@ -122,9 +121,8 @@ def _download_file(fs_file, f_cookies):
         # abort
         sys.exit(-1)
 
-
 # ---------------------------------------------------------------------------------------------
-def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
+def download_fnl(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     """
     faz o download
 
@@ -133,7 +131,7 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     :param fs_fnl_dir (str): diretório de dados
     """
     # logger
-    M_LOG.debug("download_FNL >>")
+    M_LOG.debug("download_fnl >>")
 
     # logger
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))
@@ -175,7 +173,7 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     # enquanto durar...
     while li_tempo_decorrido <= fi_forecast_time:
         # hora atual (str)
-        ls_hora = "{:0>2d}".format(li_hora_atu)
+        ls_hora = "{li_hora_atu:0>2d}"
 
         # arquivo para download
         ls_file = f"grib2/{ls_ano}/{ls_ano}.{ls_mes}/fnl_{ls_data_ini}_{ls_hora}_00.grib2"
@@ -203,7 +201,6 @@ def download_FNL(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
             ls_ano = ls_data_ini[0:4]
             ls_mes = ls_data_ini[4:6]
 
-
 # ---------------------------------------------------------------------------------------------
 # this is the bootstrap process
 
@@ -218,6 +215,6 @@ if "__main__" == __name__:
     ldct_date = {"data_ini": "20211112", "hora_ini": "12"}
 
     # run application
-    download_FNL(ldct_date, 48)
+    download_fnl(ldct_date, 48, ".")
 
 # < the end >----------------------------------------------------------------------------------
