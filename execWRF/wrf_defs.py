@@ -6,6 +6,12 @@ wrf_defs
 """
 # < defines >----------------------------------------------------------------------------------
 
+# horas de início de previsão válidas
+DLST_HORA_OK = [0, 6, 12, 18]
+
+# tempos de previsão válidos
+DLST_TEMPO_OK = [24, 48, 72]
+
 # lista de regiões
 DLST_REGIAO_NOME = ["Norte", "Sudeste", "Brasília - mp6", "Brasília - mp10"]
 

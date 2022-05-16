@@ -24,15 +24,7 @@ import graypy
 import execWRF.exc_defs as df
 import execWRF.exc_download as dwn
 import execWRF.exc_processes as prc
-
-# < defines >----------------------------------------------------------------------------------
-
-# horas de início de previsão válidas
-DLST_HORA_OK = [0, 6, 12, 18]
-# tempos de previsão válidos
-DLST_TEMPO_OK = [24, 48, 72]
-# regiões válidas
-DLST_REGIAO_OK = ["N", "SE"]
+import execWRF.wrf_defs as wdf
 
 # < logging >----------------------------------------------------------------------------------
 
@@ -143,7 +135,7 @@ def arg_parse():
     )
     li_hora_ini = (
         li_hora_ini
-        if li_hora_ini in DLST_HORA_OK
+        if li_hora_ini in wdf.DLST_HORA_OK
         else print_usage(f"Erro: hora ({li_hora_ini}) inválida.")
     )
 
@@ -155,7 +147,7 @@ def arg_parse():
     )
     li_forecast_time = (
         li_forecast_time
-        if li_forecast_time in DLST_TEMPO_OK
+        if li_forecast_time in wdf.DLST_TEMPO_OK
         else print_usage(f"Erro: tempo ({li_forecast_time}) inválida.")
     )
 
@@ -167,7 +159,7 @@ def arg_parse():
     )
     ls_regiao = (
         ls_regiao
-        if ls_regiao in DLST_REGIAO_OK
+        if ls_regiao in wdf.DLST_REGIAO_SIGLA
         else print_usage(f"Erro: região ({ls_regiao}) inválida.")
     )
 
@@ -329,9 +321,9 @@ def print_usage(fs_msg):
     print("    MM     = Mês (01..12)")
     print("    DD     = Dia (01..31)")
     print("    HH     = Hora (00..23)")
-    print(f"    INÍCIO = Hora de início da previsão ({DLST_HORA_OK})")
-    print(f"    TEMPO  = Tempo de previsão ({DLST_TEMPO_OK})")
-    print(f"    REGIÃO = Região ({DLST_REGIAO_OK})")
+    print(f"    INÍCIO = Hora de início da previsão ({wdf.DLST_HORA_OK})")
+    print(f"    TEMPO  = Tempo de previsão ({wdf.DLST_TEMPO_OK})")
+    print(f"    REGIÃO = Região ({wdf.DLST_REGIAO_SIGLA})")
     print("    E-MAIL = E-mail para resposta (opcional)")
 
     # abort
