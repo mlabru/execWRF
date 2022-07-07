@@ -31,8 +31,7 @@ if DDCT_VALUES:
 # < defines >----------------------------------------------------------------------------------
 
 # logging level
-DI_LOG_LEVEL = logging.DEBUG
-# DI_LOG_LEVEL = logging.WARNING
+DI_LOG_LEVEL = logging.WARNING
 
 # intervalo de previsão
 DI_INTERVALO = 6

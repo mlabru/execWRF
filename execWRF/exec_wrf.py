@@ -2,6 +2,7 @@
 """
 exec_wrf
 
+2022.jul  mlabru  remove graylog log management
 2022.apr  mlabru  graylog log management
 2021.nov  eliana  initial version (Linux/Python)
 """
@@ -17,9 +18,6 @@ import shutil
 import sys
 import tarfile
 
-# graylog
-import graypy
-
 # local
 import execWRF.exc_defs as df
 import execWRF.exc_download as dwn
@@ -31,10 +29,6 @@ import execWRF.wrf_defs as wdf
 # logger
 M_LOG = logging.getLogger(__name__)
 M_LOG.setLevel(df.DI_LOG_LEVEL)
-
-# graylog handler
-M_GLH = graypy.GELFUDPHandler("localhost", 12201)
-M_LOG.addHandler(M_GLH)
 
 # ---------------------------------------------------------------------------------------------
 def adjust_config(fo_cfg_parser, fs_cfg_pathname, fi_forecast_time, fs_token):
@@ -398,7 +392,7 @@ def main():
 
 # ---------------------------------------------------------------------------------------------
 # this is the bootstrap process
-
+#
 if "__main__" == __name__:
     # logger
     logging.basicConfig(
@@ -412,7 +406,16 @@ if "__main__" == __name__:
     # disable logging
     # logging.disable(sys.maxsize)
 
-    # run application
-    main()
+    try:
+        # run application
+        main()
+        
+    # em caso de erro...
+    except KeyboardInterrupt:
+        # logger
+        logging.warning("Interrupted.")
+        
+    # terminate
+    sys.exit(0)
 
 # < the end >----------------------------------------------------------------------------------

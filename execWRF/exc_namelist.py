@@ -180,7 +180,7 @@ def cria_namelist_wrf(fs_namelist_file, f_config, f_data):
         lfh.write("  s_vert = 1, 1, 1,\n")
         lfh.write(f"  e_vert = {l_cfg['p_e_vert']}\n")
         lfh.write("  p_top_requested = 5000,\n")
-        lfh.write("  num_metgrid_levels = 34,\n")
+        lfh.write(f"  num_metgrid_levels = {l_cfg['p_num_metgrid_levels']},\n")     # era 34
         lfh.write("  num_metgrid_soil_levels = 4,\n")
         lfh.write(f"  dx = {l_cfg['p_d_dx']}\n")
         lfh.write(f"  dy = {l_cfg['p_d_dy']}\n")
@@ -191,7 +191,8 @@ def cria_namelist_wrf(fs_namelist_file, f_config, f_data):
         lfh.write(f"  parent_grid_ratio = {l_cfg['p_parent_grid_ratio']}\n")
         lfh.write("  parent_time_step_ratio = 1, 3, 3,\n")
         lfh.write("  feedback = 1,\n")
-        lfh.write("  smooth_option = 0\n/")
+        lfh.write("  smooth_option = 0,\n")
+        lfh.write(f"  sfcp_to_sfcp = {l_cfg['p_sfcp_to_sfcp']}\n/")    # .true.
         lfh.write("\n")
         # lfh.write("  use_adaptive_time_step = .true.,\n")
         # lfh.write("  step_to_output_time = .true.,\n")

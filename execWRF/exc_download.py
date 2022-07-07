@@ -2,6 +2,7 @@
 """
 exc_download
 
+2022.jul  mlabru  remove graylog log management
 2022.apr  mlabru  graylog log management
 2021.nov  eliana  initial version (Linux/Python)
 """
@@ -12,9 +13,6 @@ import datetime
 import logging
 import os
 import sys
-
-# graylog
-import graypy
 
 # requests
 import requests
@@ -37,10 +35,6 @@ DS_PATH = "https://rda.ucar.edu/data/ds083.2"
 # logger
 M_LOG = logging.getLogger(__name__)
 M_LOG.setLevel(df.DI_LOG_LEVEL)
-
-# graylog handler
-M_GLH = graypy.GELFUDPHandler("localhost", 12201)
-M_LOG.addHandler(M_GLH)
 
 # ---------------------------------------------------------------------------------------------
 def check_file_status(fs_filepath, fi_filesize):

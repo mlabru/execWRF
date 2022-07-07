@@ -2,6 +2,7 @@
 """
 exc_processes
 
+2022.jul  mlabru  remove graylog log management
 2022.apr  mlabru  graylog log management
 2021.nov  eliana  initial version (Linux/Python)
 """
@@ -16,9 +17,6 @@ import shutil
 import subprocess
 import sys
 
-# graylog
-import graypy
-
 # local
 import execWRF.exc_defs as df
 import execWRF.exc_namelist as mnl
@@ -28,10 +26,6 @@ import execWRF.exc_namelist as mnl
 # logger
 M_LOG = logging.getLogger(__name__)
 M_LOG.setLevel(df.DI_LOG_LEVEL)
-
-# graylog handler
-M_GLH = graypy.GELFUDPHandler("localhost", 12201)
-M_LOG.addHandler(M_GLH)
 
 # ---------------------------------------------------------------------------------------------
 def process_all(fo_cfg_parser, fo_forecast_date, fs_token):
