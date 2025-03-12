@@ -366,7 +366,12 @@ def main():
     assert lo_cfg_parser
 
     # forecast already exists ?
-    if not forecast_exists(lo_cfg_parser, ls_token):
+    if forecast_exists(lo_cfg_parser, ls_token):
+        # update date of tgz file
+        touch_tgz_file(lo_cfg_parser, ls_token)
+
+    # senão,...
+    else:
         # adjust config parameters
         adjust_config(lo_cfg_parser, ls_cfg_fullpath, li_forecast_time, ls_token)
 
@@ -377,15 +382,10 @@ def main():
         prc.process_all(lo_cfg_parser, lo_forecast_date, ls_token)
 
         # make tgz file
-        make_tgz_file(lo_cfg_parser)  # , ls_token)
+        make_tgz_file(lo_cfg_parser)
 
         # remove output directory tree
         shutil.rmtree(lo_cfg_parser["WRF"]["dir_out"])
-
-    # senão,...
-    else:
-        # touch tgz file
-        touch_tgz_file(lo_cfg_parser, ls_token)
 
     # logger
     M_LOG.info("Fim de execução !")

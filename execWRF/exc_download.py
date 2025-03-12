@@ -2,6 +2,7 @@
 """
 exc_download
 
+2023.aug  mlabru  new NCar data path
 2022.jul  mlabru  remove graylog log management
 2022.apr  mlabru  graylog log management
 2021.nov  eliana  initial version (Linux/Python)
@@ -28,7 +29,8 @@ DI_CHUNK_SIZE = 1048576
 # NCAR login
 DS_URL = "https://rda.ucar.edu/cgi-bin/login"
 # NCAR data
-DS_PATH = "https://rda.ucar.edu/data/ds083.2"
+# DS_PATH = "https://rda.ucar.edu/data/ds083.2"
+DS_PATH = "https://stratus.rda.ucar.edu/ds083.2"
 
 # < logging >----------------------------------------------------------------------------------
 
@@ -41,9 +43,6 @@ def check_file_status(fs_filepath, fi_filesize):
     """
     check file status
     """
-    # logger
-    M_LOG.info(">> check_file_status")
-
     # new line
     sys.stdout.write("\r")
     sys.stdout.flush()
@@ -63,9 +62,6 @@ def _download_file(fs_file, f_cookies):
     :param fs_file (str): filename to download
     :param f_cookies (): cookies
     """
-    # logger
-    M_LOG.info(">> _download_file")
-
     # build file URL
     ls_file_url = os.path.join(DS_PATH, fs_file)
 
@@ -80,8 +76,7 @@ def _download_file(fs_file, f_cookies):
 
     while li_retry > 0:
         # request file
-        lo_resp = requests.get(
-            ls_file_url, cookies=f_cookies, allow_redirects=True, stream=True)
+        lo_resp = requests.get(ls_file_url, cookies=f_cookies, allow_redirects=True, stream=True)
 
         if 200 == lo_resp.status_code:
             # tamanho do arquivo
@@ -94,7 +89,7 @@ def _download_file(fs_file, f_cookies):
                     # grava o chunk no arquivo
                     lfh.write(lchunk)
 
-                    # ainfa não terminou ?
+                    # ainda não terminou ?
                     # if DI_CHUNK_SIZE < li_filesize:
                     # exibe o status atual
                     # check_file_status(ls_file_name, li_filesize)
@@ -103,7 +98,7 @@ def _download_file(fs_file, f_cookies):
             break
 
         # logger
-        M_LOG.error("Erro no download: %s(%d)", str(lo_resp.status_code), li_retry, exc_info=1)
+        M_LOG.error("Erro no download of %s: %s(%d)", ls_file_url, str(lo_resp.status_code), li_retry, exc_info=1)
         # abort
         li_retry -= 1
 
@@ -123,9 +118,6 @@ def download_fnl(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
     :param fi_forecast_time (int): tempo de previsão
     :param fs_fnl_dir (str): diretório de dados
     """
-    # logger
-    M_LOG.info(">> download_fnl")
-
     # logger
     M_LOG.info("Início do download: %s.", str(datetime.datetime.now()))
 
@@ -171,9 +163,9 @@ def download_fnl(fo_forecast_date, fi_forecast_time, fs_fnl_dir):
         # arquivo para download
         ls_file = f"grib2/{ls_ano}/{ls_ano}.{ls_mes}/fnl_{ls_data_ini}_{ls_hora}_00.grib2"
 
-        # arquivo não existe ?
+        # arquivo FNL não existe ?
         if not os.path.exists(os.path.basename(ls_file)):
-            # faz o download do arquivo
+            # faz o download do arquivo FNL
             _download_file(ls_file, lo_resp.cookies)
 
         # incrementa a hora atual

@@ -214,7 +214,7 @@ def cria_namelist_wrf(fs_namelist_file, f_config, f_data):
         lfh.write("  sf_surface_physics = 2, 2, 2,\n")
         lfh.write("  bl_pbl_physics = 1, 1, 1,\n")
         lfh.write("  bldt = 0, 0, 0,\n")
-        lfh.write("  cu_physics = 1, 1, 1,\n")
+        lfh.write("  cu_physics = 3, 3, 3,\n")
         lfh.write("  cudt = 5, 5, 5,\n")
         lfh.write("  isfflx = 1,\n")
         lfh.write("  ifsnow = 0,\n")

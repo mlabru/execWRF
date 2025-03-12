@@ -329,7 +329,7 @@ def process_wrf(fo_cfg_parser, fo_forecast_date):
     try:
         # comando
         # ls_cmd_exe = "mpirun -np 24 ./wrf.exe"
-        ls_cmd_exe = "mpirun --use-hwthread-cpus -np 7 ./wrf.exe"
+        ls_cmd_exe = "mpirun --use-hwthread-cpus -np 10 ./wrf.exe"
 
         # executa o WRF com multiprocessamento (mpirun)
         ls_res = subprocess.check_output(ls_cmd_exe, shell=True).decode(sys.stdout.encoding)
